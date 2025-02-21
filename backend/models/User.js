@@ -1,72 +1,47 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const express = require('express');
+const User = require('../models/User'); // Import User model
 
-const UserSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true
-  },
-  password: {
-    type: String,
-    required: true
-  },
-  role: {
-    type: String,
-    enum: ['admin', 'policyholder', 'hospital'],
-    //required: true
-    default: "policyholder"
-  },
-  did: {
-    type: String,
-    unique: true, // Ensures one DID per user
-    sparse: true // Allows users without a DID
-  },
-  accountAddress: {
-    type: String,
-    unique: true, // Ensures each user has a single blockchain account
-    sparse: true
-  },
-  policy: {
-    policyId: {
-      type: Number,
-      unique: true, // Ensures one policy per user
-      sparse: true
-    },
-    insuranceCompany: String,
-    policyAmount: Number,
-    premium: Number,
-    startDate: Date,
-    endDate: Date,
-    status: {
-      type: String,
-      enum: ['Active', 'Inactive', 'Claimed'],
-      default: 'Inactive'
-    }
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+const router = express.Router();
 
-// Hash password before saving
-UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+// Signup route
+router.post('/signup', async (req, res) => {
+  const { 
+    firstName,
+    secondName,
+    email,
+    idNumber,
+    password,
+    did,
+    role,
+    status
+  } = req.body;
 
   try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
+    // Ensure role and status have default values if not provided
+    const userRole = role || "pending";
+    const userStatus = status || "pending";
+
+    // Create new user instance
+    const user = new User({ firstName, secondName, email, idNumber, password, did, role: userRole, status: userStatus });
+
+    // Save user to database
+    await user.save();
+
+    res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
-    next(error);
+    console.error("Signup Error:", error);
+    res.status(400).json({ error: error.message });
   }
 });
 
-// Method to compare passwords
-UserSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
+// Get all users (for testing)
+router.get('/', async (req, res) => {
+  try {
+    const users = await User.find();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to retrieve users' });
+  }
+});
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = router;
