@@ -1,4 +1,4 @@
 node_modules/
-contracts/build/
+build/contracts
 contracts/artifacts/
-contracts/cache/
+.env
