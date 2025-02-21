@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
-import { Mail, Lock, Eye, EyeClosed, User, IdCard } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User, IdCard } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 
 const Signup = () => {
@@ -22,6 +22,19 @@ const Signup = () => {
   const togglePasswordVisibility = () => setPasswordVisible((prev) => !prev);
   const toggleConfirmPasswordVisibility = () => setConfirmPasswordVisible((prev) => !prev);
 
+  // Password validation regex
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,10}$/;
+
+  const validatePassword = (password) => {
+    if (password.length < 8 || password.length > 10) {
+      return "Password must be between 8 and 10 characters long";
+    }
+    if (!passwordRegex.test(password)) {
+      return "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character";
+    }
+    return null;
+  };
+
   // Generate a DID
   const generateDID = () => {
     if (didGenerated) return;
@@ -37,6 +50,12 @@ const Signup = () => {
 
     if (!firstName || !secondName || !email || !idNumber || !password || !confirmPassword || !did) {
       toast.error("Please fill in all fields");
+      return;
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      toast.error(passwordError);
       return;
     }
 
@@ -152,6 +171,74 @@ const Signup = () => {
                 placeholder="Enter your email"
                 className="w-full p-2 pl-3 bg-transparent border-none focus:outline-none text-gray-700"
               />
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <p className="text-sm font-medium text-gray-600">ID Number</p>
+            <div className="flex items-center border-b-2 border-gray-300 mt-1">
+              <IdCard className="w-5 h-5 text-gray-500" />
+              <input
+                type="text"
+                value={idNumber}
+                onChange={(e) => setIdNumber(e.target.value)}
+                placeholder="Enter your ID number"
+                className="w-full p-2 pl-3 bg-transparent border-none focus:outline-none text-gray-700"
+              />
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <p className="text-sm font-medium text-gray-600">Password</p>
+            <div className="flex items-center border-b-2 border-gray-300 mt-1">
+              <Lock className="w-5 h-5 text-gray-500" />
+              <input
+                type={passwordVisible ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="w-full p-2 pl-3 bg-transparent border-none focus:outline-none text-gray-700"
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="focus:outline-none"
+              >
+                {passwordVisible ? (
+                  <EyeOff className="w-5 h-5 text-gray-500" />
+                ) : (
+                  <Eye className="w-5 h-5 text-gray-500" />
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Password must be 8-10 characters long and contain at least one uppercase letter, 
+              one lowercase letter, one number, and one special character (@$!%*?&)
+            </p>
+          </div>
+
+          <div className="mb-4">
+            <p className="text-sm font-medium text-gray-600">Confirm Password</p>
+            <div className="flex items-center border-b-2 border-gray-300 mt-1">
+              <Lock className="w-5 h-5 text-gray-500" />
+              <input
+                type={confirmPasswordVisible ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm your password"
+                className="w-full p-2 pl-3 bg-transparent border-none focus:outline-none text-gray-700"
+              />
+              <button
+                type="button"
+                onClick={toggleConfirmPasswordVisibility}
+                className="focus:outline-none"
+              >
+                {confirmPasswordVisible ? (
+                  <EyeOff className="w-5 h-5 text-gray-500" />
+                ) : (
+                  <Eye className="w-5 h-5 text-gray-500" />
+                )}
+              </button>
             </div>
           </div>
 

@@ -5,7 +5,19 @@ const router = express.Router();
 
 // Signup route
 router.post('/signup', async (req, res) => {
-  const { username, password, role } = req.body;
+  const { 
+    firstName,
+    secondName,
+    email,
+    idNumber,
+    password,
+    did,
+    role,
+    status,
+   } = req.body;
+
+  const userRole = role || "pending";
+    const user = new User({ firstName, secondName, email, idNumber, password, did, role: userRole, status: userStatus });
   
   try {
     const user = new User({ username, password, role });
