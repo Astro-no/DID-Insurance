@@ -1,47 +1,16 @@
-const express = require('express');
-const User = require('../models/User'); // Import User model
+const mongoose = require('mongoose');
 
-const router = express.Router();
-
-// Signup route
-router.post('/signup', async (req, res) => {
-  const { 
-    firstName,
-    secondName,
-    email,
-    idNumber,
-    password,
-    did,
-    role,
-    status
-  } = req.body;
-
-  try {
-    // Ensure role and status have default values if not provided
-    const userRole = role || "pending";
-    const userStatus = status || "pending";
-
-    // Create new user instance
-    const user = new User({ firstName, secondName, email, idNumber, password, did, role: userRole, status: userStatus });
-
-    // Save user to database
-    await user.save();
-
-    res.status(201).json({ message: 'User created successfully' });
-  } catch (error) {
-    console.error("Signup Error:", error);
-    res.status(400).json({ error: error.message });
-  }
+const userSchema = new mongoose.Schema({
+  firstName: { type: String, required: true },
+  secondName: { type: String, required: true },
+  email: { type: String, unique: true, required: true },
+  idNumber: { type: String, unique: true, required: true },
+  password: { type: String, required: true },
+  did: { type: String, required: true },
+  role: { type: String, default: "pending" },
+  status: { type: String, default: "pending" }
 });
 
-// Get all users (for testing)
-router.get('/', async (req, res) => {
-  try {
-    const users = await User.find();
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to retrieve users' });
-  }
-});
+const User = mongoose.model('User', userSchema);
 
-module.exports = router;
+module.exports = User;

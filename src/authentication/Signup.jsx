@@ -88,7 +88,7 @@ const Signup = () => {
         toast.success("Signup successful! Awaiting admin approval.");
         setTimeout(() => navigate("/login"), 2000);
       } else {
-        toast.error(data.message || "Signup failed.");
+        toast.error(data.message || data.error || "Signup failed.");
       }
     } catch (error) {
       console.error("Error:", error);
