@@ -13,11 +13,11 @@ mongoose.connect("mongodb://localhost:27017/insuranceDB", {
 const updateAdminUser = async () => {
   try {
     //const oldEmail = "otivil@gmail.com"; // I USED THIS TO CREATE THE ADMIN
-    //const newEmail = "admin@insurance.app";
+    const username = "sauti@gmail.com";
 
     const updatedUser = await User.findOneAndUpdate(
-      { email: oldEmail },
-      { email: newEmail, role: "admin", status: "active" },
+      //{ email: oldEmail },
+      { username: username, role: "admin", status: "active" },
       { new: true } // Return the updated document
     );
 

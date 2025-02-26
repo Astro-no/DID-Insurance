@@ -24,22 +24,28 @@ const Home = () => {
     const userRole = sessionStorage.getItem("role"); // Fetch user role
 
     if (!isAuthenticated) {
-      return navigate("/");
+      navigate("/");
+      return;
     }
 
     setRole(userRole);
-  }, []);
+
+    // ✅ Redirect to the admin panel if user is an admin
+    if (userRole === "admin") {
+      navigate("/admin");
+    }
+  }, [navigate]);
 
   const handleLogout = () => {
     sessionStorage.clear();
-    return navigate("/");
+    navigate("/");
   };
 
   useEffect(() => {
     const initWeb3 = async () => {
       try {
         const provider = new Web3.providers.HttpProvider(
-          "http://127.0.0.1:7545"
+          "http://127.0.0.1:8545"
         );
         const web3Instance = new Web3(provider);
         setWeb3(web3Instance);

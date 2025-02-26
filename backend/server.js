@@ -1,8 +1,11 @@
+const axios = require("axios");
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./models/db'); // Import MongoDB connection
 const userRoutes = require('./routes/userRoutes'); // Import user routes
+const adminRoutes = require("./routes/admin");
+
 
 
 dotenv.config();
@@ -18,7 +21,10 @@ connectDB();
 // Routes
 //app.use('./models/User', userRoutes);
 app.use('/api/users', userRoutes);
+app.use("api/admin", adminRoutes);
 
+const authRoutes = require("./routes/auth");
+app.use(authRoutes); // Mounting the auth routes
 
 app.get('/', (req, res) => {
   res.send('API is running...');

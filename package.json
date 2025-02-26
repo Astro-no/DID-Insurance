@@ -6,7 +6,9 @@
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "axios": "^1.8.0",
     "bcryptjs": "^3.0.2",
+    "crypto-browserify": "^3.12.1",
     "did-jwt": "^8.0.8",
     "ethers": "^6.13.5",
     "ethr-did": "^3.0.25",
@@ -20,6 +22,9 @@
     "solc": "^0.8.20",
     "web-vitals": "^2.1.4",
     "web3": "^1.10.4"
+  },
+  "browser": {
+    "crypto": false
   },
   "scripts": {
     "start": "react-scripts start",

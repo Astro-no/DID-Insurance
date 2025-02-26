@@ -2,6 +2,7 @@ import { Mail, Lock, Eye, EyeClosed, Key } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import axios from "axios";
 import Preloader from "../pages/home/Preloader";
 
 const Login = () => {
@@ -17,55 +18,78 @@ const Login = () => {
   const togglePasswordVisibility = () => setPasswordVisible((prev) => !prev);
   const toggleLoginMethod = () => setUseDidLogin((prev) => !prev);
 
-  const handleEmailLogin = (e) => {
+  const handleEmailLogin = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       toast.error("Please fill in all fields");
       return;
     }
 
-    setLoading(true);
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const foundUser = users.find((user) => user.email === email && user.password === password);
+    try {
+      setLoading(true);
+      // Replace with your actual API endpoint
+      const response = await axios.post("http://localhost:5000/api/auth/login", {
+        email,
+        password
+      });
 
-    if (foundUser) {
+      // Store the JWT token for authentication
+      localStorage.setItem("token", response.data.token);
       sessionStorage.setItem("isAuthenticated", true);
+      
+      // Optionally store user data if needed
+      if (response.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+      }
+
       toast.success("Login successful!");
 
       setTimeout(() => {
         setLoading(false);
         navigate("/home");
       }, 3000);
-    } else {
-      toast.error("Invalid email or password");
-      setPassword("");
+    } catch (error) {
       setLoading(false);
+      const errorMessage = error.response?.data?.message || "Invalid email or password";
+      toast.error(errorMessage);
+      setPassword("");
     }
   };
 
-  const handleDidLogin = (e) => {
+  const handleDidLogin = async (e) => {
     e.preventDefault();
     if (!did) {
       toast.error("Please enter your DID");
       return;
     }
 
-    setLoading(true);
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const foundUser = users.find((user) => user.did === did);
+    try {
+      setLoading(true);
+      // Replace with your actual API endpoint
+      const response = await axios.post("/api/auth/login-did", {
+        did
+      });
 
-    if (foundUser) {
+      // Store the JWT token for authentication
+      localStorage.setItem("token", response.data.token);
       sessionStorage.setItem("isAuthenticated", true);
+      
+      // Optionally store user data if needed
+      if (response.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+      }
+
       toast.success("DID login successful!");
 
       setTimeout(() => {
         setLoading(false);
         navigate("/home");
       }, 3000);
-    } else {
-      toast.error("DID not found. Please check your DID.");
-      setDid("");
+    } catch (error) {
       setLoading(false);
+      const errorMessage = error.response?.data?.message || "DID not found. Please check your DID.";
+      toast.error(errorMessage);
+      setDid("");
     }
   };
 
