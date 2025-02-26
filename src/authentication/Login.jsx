@@ -66,7 +66,7 @@ const Login = () => {
     try {
       setLoading(true);
       // Replace with your actual API endpoint
-      const response = await axios.post("/api/auth/login-did", {
+      const response = await axios.post("http://localhost:5000/api/auth/login-did", {
         did
       });
 

@@ -15,11 +15,12 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/home" element={<Home />} />
-        <Route path="/admin" element={<ProtectedAdminRoute>
-              <AdminPanel />
-            </ProtectedAdminRoute>
-          } 
-        />
+        <Route path="/admin" element={
+          <ProtectedAdminRoute>
+            <AdminPanel />
+          </ProtectedAdminRoute>
+        } 
+/>
       </Routes>
     </Router>
   );

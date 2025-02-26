@@ -21,7 +21,7 @@ connectDB();
 // Routes
 //app.use('./models/User', userRoutes);
 app.use('/api/users', userRoutes);
-app.use("api/admin", adminRoutes);
+app.use(adminRoutes);
 
 const authRoutes = require("./routes/auth");
 app.use(authRoutes); // Mounting the auth routes

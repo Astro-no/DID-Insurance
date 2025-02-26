@@ -32,6 +32,8 @@ const authenticateAdmin = async (req, res, next) => {
 
 // 🟢 Get admin details
 router.get("/me", authenticateAdmin, async (req, res) => {
+  //add a debug log line
+  console.log("Admin", req.admin);
   try {
     res.json({ id: req.admin._id, role: req.admin.role, email: req.admin.email });
   } catch (error) {
