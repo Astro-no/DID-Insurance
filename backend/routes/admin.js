@@ -2,7 +2,8 @@ const express = require("express");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
-
+const verifyAdmin = require("../middleware/verifyAdmin"); // ✅ Import middleware
+const verifyToken = require("../middleware/verifyToken"); // ✅ Create if missing
 
 dotenv.config();
 
@@ -31,7 +32,7 @@ const authenticateAdmin = async (req, res, next) => {
 };
 
 // 🟢 Get admin details
-router.get("/me", authenticateAdmin, async (req, res) => {
+router.get("http://localhost:5000/me", authenticateAdmin, async (req, res) => {
   //add a debug log line
   console.log("Admin", req.admin);
   try {
@@ -48,6 +49,18 @@ router.get("/users", authenticateAdmin, async (req, res) => {
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.get("http://localhost:5000/users", verifyAdmin, async (req, res) => {
+  try {
+    console.log("🔹 Admin request received! Fetching users...");
+    const users = await User.find();
+    console.log("🔹 Users found:", users); // ✅ Debug log
+    res.json(users);
+  } catch (error) {
+    console.error("❌ Error fetching users:", error);
+    res.status(500).json({ message: "Server error", error });
   }
 });
 

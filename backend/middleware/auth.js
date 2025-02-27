@@ -1,0 +1,40 @@
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const dotenv = require("dotenv");
+const verifyToken = require("../middleware/verifyToken"); // ✅ Create if missing
+const express = require("express");
+const router = express.Router();
+
+dotenv.config();
+
+// Middleware to verify admin access
+const verifyAdmin = async (req, res, next) => {
+  try {
+    const token = req.header("Authorization");
+    if (!token) return res.status(401).json({ message: "Access denied. No token provided." });
+
+    const decoded = jwt.verify(token.replace("Bearer ", ""), process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied. Admins only." });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    res.status(401).json({ message: "Invalid token", error });
+  }
+
+    router.get("/me", verifyToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select("-password"); // Exclude password
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error });
+    }
+    });
+
+module.exports = { verifyAdmin, router };};

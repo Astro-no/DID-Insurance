@@ -5,8 +5,9 @@ const dotenv = require('dotenv');
 const connectDB = require('./models/db'); // Import MongoDB connection
 const userRoutes = require('./routes/userRoutes'); // Import user routes
 const adminRoutes = require("./routes/admin");
-
-
+const authRoutes = require("./routes/auth"); // Ensure this file exists
+const verifyToken = require('./middleware/verifyToken'); // Import verifyToken middleware
+const verifyAdmin = require('./middleware/verifyAdmin'); // Import verifyAdmin middleware
 
 dotenv.config();
 const app = express();
@@ -19,12 +20,9 @@ app.use(cors()); // Enable CORS
 connectDB();
 
 // Routes
-//app.use('./models/User', userRoutes);
 app.use('/api/users', userRoutes);
-app.use(adminRoutes);
-
-const authRoutes = require("./routes/auth");
-app.use(authRoutes); // Mounting the auth routes
+app.use("/api/auth", authRoutes); // Register auth routes
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');

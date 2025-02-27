@@ -16,7 +16,8 @@ const ProtectedAdminRoute = ({ children }) => {
                     return;
                 }
 
-                const response = await axios.get("http://localhost:5000/me", {
+                const response = await axios.get("http://localhost:5000/api/auth/me", {
+
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
