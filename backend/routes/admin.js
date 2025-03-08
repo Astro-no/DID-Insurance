@@ -52,6 +52,19 @@ router.get("/users", authenticateAdmin, async (req, res) => {
   }
 });
 
+// ✅ Get user by DID (NEW ROUTE - Add Below)
+router.get("/users/did/:did", authenticateAdmin, async (req, res) => {
+  try {
+    const user = await User.findOne({ did: req.params.did });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.get("http://localhost:5000/users", verifyAdmin, async (req, res) => {
   try {
     console.log("🔹 Admin request received! Fetching users...");
