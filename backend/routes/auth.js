@@ -2,51 +2,47 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
 const dotenv = require("dotenv");
-const verifyAdmin = require("../middleware/verifyAdmin"); // Import the middleware
-const verifyToken = require("../middleware/verifyToken"); // Import the middleware
+const User = require("../models/User");
+const verifyAdmin = require("../middleware/verifyAdmin");
+const verifyToken = require("../middleware/verifyToken");
 
 dotenv.config();
 
-// User Signup
+// ========== USER SIGNUP ==========
 router.post("/signup", async (req, res) => {
   const { firstName, secondName, email, idNumber, password, did, role, status } = req.body;
 
   try {
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: "Email already registered" });
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) return res.status(400).json({ message: "Email already registered" });
 
     const existingID = await User.findOne({ idNumber });
     if (existingID) return res.status(400).json({ message: "ID Number already registered" });
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user
     const newUser = new User({
       firstName,
       secondName,
       email,
       idNumber,
       password: hashedPassword,
-      did, // Store the DID
+      did,
       role: role || "pending",
-      status: status || "pending"
+      status: status || "pending",
     });
 
-    // Save to database
     await newUser.save();
-    
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
+    console.error("Signup error:", error);
     res.status(500).json({ message: "Server error", error });
   }
 });
 
-// Email & Password Login
+// ========== EMAIL/PASSWORD LOGIN ==========
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -54,8 +50,7 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Allow both "approved" and "active" users
-    if (user.status !== "approved" && user.status !== "active") {
+    if (!["approved", "active"].includes(user.status)) {
       return res.status(403).json({ message: "Account pending approval by admin" });
     }
 
@@ -66,11 +61,12 @@ router.post("/login", async (req, res) => {
 
     res.json({ token, user });
   } catch (error) {
+    console.error("Login error:", error);
     res.status(500).json({ message: "Server error", error });
   }
 });
 
-// DID-Based Login
+// ========== DID LOGIN ==========
 router.post("/login-did", async (req, res) => {
   const { did } = req.body;
 
@@ -78,8 +74,7 @@ router.post("/login-did", async (req, res) => {
     const user = await User.findOne({ did });
     if (!user) return res.status(404).json({ message: "DID not found" });
 
-    // Allow both "approved" and "active" users
-    if (user.status !== "approved" && user.status !== "active") {
+    if (!["approved", "active"].includes(user.status)) {
       return res.status(403).json({ message: "Account pending approval by admin" });
     }
 
@@ -87,13 +82,15 @@ router.post("/login-did", async (req, res) => {
 
     res.json({ token, user });
   } catch (error) {
+    console.error("DID login error:", error);
     res.status(500).json({ message: "Server error", error });
   }
 });
 
-// Approve user
+// ========== ADMIN APPROVE USER ==========
 router.put("/approve-user/:id", verifyAdmin, async (req, res) => {
   const { role } = req.body;
+
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -104,18 +101,20 @@ router.put("/approve-user/:id", verifyAdmin, async (req, res) => {
 
     res.json({ message: "User approved successfully", user });
   } catch (error) {
+    console.error("Approve user error:", error);
     res.status(500).json({ message: "Server error", error });
   }
 });
 
-// Get current user
+// ========== GET CURRENT LOGGED-IN USER ==========
 router.get("/me", verifyToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password"); // Exclude password
+    const user = await User.findById(req.user.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json(user);
   } catch (error) {
+    console.error("Get user error:", error);
     res.status(500).json({ message: "Server error", error });
   }
 });

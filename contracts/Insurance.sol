@@ -12,6 +12,8 @@ contract Insurance {
         uint256 endDate;
         PolicyStatus status;
         string holderDID;
+        string insuranceCompanyName; // Added field
+        string hospitalName; // Added field
     }
 
     struct Procedure {
@@ -90,6 +92,7 @@ contract Insurance {
         emit HospitalDeauthorized(_hospital);
     }
 
+    // Original createPolicy function
     function createPolicy(
         string memory _did,
         uint256 _amount,
@@ -111,12 +114,53 @@ contract Insurance {
             startDate: block.timestamp,
             endDate: _endDate,
             status: PolicyStatus.Active,
-            holderDID: _did
+            holderDID: _did,
+            insuranceCompanyName: "",
+            hospitalName: ""
         });
         
         userPolicies[msg.sender].push(policyId);
         
         emit PolicyCreated(msg.sender, policyId, block.timestamp, _endDate);
+        return policyId;
+    }
+
+    // New function to match frontend's createIns call
+    function createIns(
+        string memory _did,
+        string memory _insuranceCompanyName,
+        string memory _hospitalName,
+        uint256 _amount,
+        uint256 _premium,
+        uint256 _startDate,
+        uint256 _endDate
+    ) external returns (uint256) {
+        require(_endDate > _startDate, "End date must be after start date");
+        require(_premium > 0, "Invalid premium");
+        require(_amount > 0, "Invalid amount");
+        
+        uint256 policyId = nextPolicyId++;
+        
+        // Try to register DID if it doesn't exist
+        if (!didRegistry.verifyDID(_did)) {
+            didRegistry.registerDID(msg.sender, _did, policyId);
+        }
+        
+        policies[policyId] = Policy({
+            holder: msg.sender,
+            amount: _amount,
+            premium: _premium,
+            startDate: _startDate,
+            endDate: _endDate,
+            status: PolicyStatus.Active,
+            holderDID: _did,
+            insuranceCompanyName: _insuranceCompanyName,
+            hospitalName: _hospitalName
+        });
+        
+        userPolicies[msg.sender].push(policyId);
+        
+        emit PolicyCreated(msg.sender, policyId, _startDate, _endDate);
         return policyId;
     }
 
@@ -203,6 +247,32 @@ contract Insurance {
             "Unauthorized"
         );
         return policyProcedures[_policyId];
+    }
+
+    // New function to get full policy details
+    function getPolicyDetails(uint256 _policyId) external view validPolicy(_policyId) returns (
+        address holder,
+        uint256 amount,
+        uint256 premium,
+        uint256 startDate,
+        uint256 endDate,
+        PolicyStatus status,
+        string memory holderDID,
+        string memory insuranceCompanyName,
+        string memory hospitalName
+    ) {
+        Policy storage policy = policies[_policyId];
+        return (
+            policy.holder,
+            policy.amount,
+            policy.premium,
+            policy.startDate,
+            policy.endDate,
+            policy.status,
+            policy.holderDID,
+            policy.insuranceCompanyName,
+            policy.hospitalName
+        );
     }
 
     receive() external payable {}

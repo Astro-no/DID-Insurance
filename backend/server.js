@@ -2,15 +2,29 @@ const axios = require("axios");
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const connectDB = require('./models/db'); // Import MongoDB connection
+const mongoose = require("mongoose");
 const userRoutes = require('./routes/userRoutes'); // Import user routes
 const adminRoutes = require("./routes/admin");
 const authRoutes = require("./routes/auth"); // Ensure this file exists
 const verifyToken = require('./middleware/verifyToken'); // Import verifyToken middleware
 const verifyAdmin = require('./middleware/verifyAdmin'); // Import verifyAdmin middleware
 
-dotenv.config();
+dotenv.config({ path: './.env' });
 const app = express();
+
+const connectDB = async () => {
+  try {
+    console.log("🔍 Mongo URI:", process.env.MONGO_URI);
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    process.exit(1); // Exit process with failure
+  }
+};
 
 // Middleware
 app.use(express.json()); // Parse JSON

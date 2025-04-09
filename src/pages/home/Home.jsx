@@ -45,7 +45,7 @@ const Home = () => {
     const initWeb3 = async () => {
       try {
         const provider = new Web3.providers.HttpProvider(
-          "http://127.0.0.1:8545"
+          "http://127.0.0.1:7545"
         );
         const web3Instance = new Web3(provider);
         setWeb3(web3Instance);
