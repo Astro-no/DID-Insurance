@@ -108,7 +108,7 @@ const Home = () => {
                   activeTab === "createPolicy"
                     ? "bg-orange-700 text-white"
                     : "bg-orange-500 text-white"
-                } py-2 px-4 rounded-sm hover:bg-orange-300 transition duration-300`}
+                } py-2 px-4 rounded-sm hover:bg-orange-300 transition duration-300 mr-2`}
                 onClick={() => handleTabChange("createPolicy")}
               >
                 Create Policy
@@ -118,7 +118,7 @@ const Home = () => {
                   activeTab === "verifyClaim"
                     ? "bg-orange-700 text-white"
                     : "bg-orange-500 text-white"
-                } py-2 px-4 rounded-sm hover:bg-orange-300 transition duration-300`}
+                } py-2 px-4 rounded-sm hover:bg-orange-300 transition duration-300 mr-2`}
                 onClick={() => handleTabChange("verifyClaim")}
               >
                 Verify Claim
@@ -133,7 +133,7 @@ const Home = () => {
                   activeTab === "policyStatus"
                     ? "bg-orange-700 text-white"
                     : "bg-orange-500 text-white"
-                } py-2 px-4 rounded-sm hover:bg-orange-300 transition duration-300`}
+                } py-2 px-4 rounded-sm hover:bg-orange-300 transition duration-300 mr-2`}
                 onClick={() => handleTabChange("policyStatus")}
               >
                 Policy Status
@@ -143,7 +143,7 @@ const Home = () => {
                   activeTab === "makeClaim"
                     ? "bg-orange-700 text-white"
                     : "bg-orange-500 text-white"
-                } py-2 px-4 rounded-sm hover:bg-orange-300 transition duration-300`}
+                } py-2 px-4 rounded-sm hover:bg-orange-300 transition duration-300 mr-2`}
                 onClick={() => handleTabChange("makeClaim")}
               >
                 Make Claim
@@ -157,7 +157,7 @@ const Home = () => {
                 activeTab === "recordProcedure"
                   ? "bg-orange-700 text-white"
                   : "bg-orange-500 text-white"
-              } py-2 px-4 rounded-sm hover:bg-orange-300 transition duration-300`}
+              } py-2 px-4 rounded-sm hover:bg-orange-300 transition duration-300 mr-2`}
               onClick={() => handleTabChange("recordProcedure")}
             >
               Record Procedure
@@ -165,10 +165,10 @@ const Home = () => {
           )}
 
           <button
-            className="py-2 px-4 rounded-sm hover:bg-orange-300 transition duration-300 bg-blue-500"
+            className="bg-red-600 text-white py-2 px-4 rounded-sm hover:bg-red-700 transition duration-300"
             onClick={handleLogout}
           >
-            LOGOUT
+            Logout
           </button>
         </div>
 

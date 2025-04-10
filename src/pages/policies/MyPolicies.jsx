@@ -8,6 +8,7 @@ const MyPolicies = () => {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all"); // To filter active or expired policies
   const [autoRenewSuggestions, setAutoRenewSuggestions] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchMyPolicies = async () => {
@@ -62,6 +63,12 @@ const MyPolicies = () => {
     return diffDays <= 30 && !isExpired(expiryDate); // Suggest auto-renew if expiration is within 30 days
   };
 
+  // Handle logout functionality
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login"); // Navigate to login page after logout
+  };
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -78,7 +85,15 @@ const MyPolicies = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold mb-6">My Policies</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">My Policies</h2>
+        <button 
+          onClick={handleLogout}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          Logout
+        </button>
+      </div>
       
       {/* Filters for active and expired policies */}
       <div className="mb-6">
@@ -106,7 +121,7 @@ const MyPolicies = () => {
         <div className="bg-blue-50 text-blue-800 p-6 rounded-lg text-center">
           <p className="mb-4">You haven't registered for any policies yet.</p>
           <a 
-            href="/policies" 
+            href="/view-policies" 
             className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Browse Available Policies
