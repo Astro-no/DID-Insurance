@@ -5,6 +5,8 @@ import Signup from "./authentication/Signup";
 import AdminPanel from "./admin/AdminPanel";
 import ProtectedAdminRoute from "./authentication/ProtectedAdminRoute"; // Import the protected route
 import { ToastContainer } from "react-toastify";
+import MyPolicies from "./pages/policies/MyPolicies";
+import ViewPolicies from "./pages/policies/ViewPolicies";
 
 function App() {
   return (
@@ -15,10 +17,13 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/my-policies" element={<MyPolicies />} />
+        <Route path="/view-policies" element={<ViewPolicies />} />
         <Route path="/admin" element={
           <ProtectedAdminRoute>
             <AdminPanel />
           </ProtectedAdminRoute>
+          
         } 
 />
       </Routes>
