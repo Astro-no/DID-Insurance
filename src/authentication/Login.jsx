@@ -27,26 +27,34 @@ const Login = () => {
 
     try {
       setLoading(true);
-      // Replace with your actual API endpoint
       const response = await axios.post("http://localhost:5000/api/auth/login", {
         email,
         password
       });
 
-      // Store the JWT token for authentication
       localStorage.setItem("token", response.data.token);
       sessionStorage.setItem("isAuthenticated", true);
-      
-      // Optionally store user data if needed
+
       if (response.data.user) {
         localStorage.setItem("user", JSON.stringify(response.data.user));
       }
 
       toast.success("Login successful!");
 
+      // Check user role and navigate accordingly
+      const userRole = response.data.user.role;
+
       setTimeout(() => {
         setLoading(false);
-        navigate("/home");
+        if (userRole === "admin") {
+          navigate("/admin");
+        } else if (userRole === "policyholder") {
+          navigate("/policyholder-dashboard");
+        } else if (userRole === "hospital") {
+          navigate("/hospital-dashboard");
+        } else {
+          navigate("/home");
+        }
       }, 3000);
     } catch (error) {
       setLoading(false);
@@ -65,25 +73,33 @@ const Login = () => {
 
     try {
       setLoading(true);
-      // Replace with your actual API endpoint
       const response = await axios.post("http://localhost:5000/api/auth/login-did", {
         did
       });
 
-      // Store the JWT token for authentication
       localStorage.setItem("token", response.data.token);
       sessionStorage.setItem("isAuthenticated", true);
-      
-      // Optionally store user data if needed
+
       if (response.data.user) {
         localStorage.setItem("user", JSON.stringify(response.data.user));
       }
 
       toast.success("DID login successful!");
 
+      // Check user role and navigate accordingly
+      const userRole = response.data.user.role;
+
       setTimeout(() => {
         setLoading(false);
-        navigate("/home");
+        if (userRole === "admin") {
+          navigate("/admin");
+        } else if (userRole === "policyholder") {
+          navigate("/policyholder-dashboard");
+        } else if (userRole === "hospital") {
+          navigate("/hospital-dashboard");
+        } else {
+          navigate("/home");
+        }
       }, 3000);
     } catch (error) {
       setLoading(false);

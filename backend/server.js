@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const mongoose = require("mongoose");
 const userRoutes = require('./routes/userRoutes'); // Import user routes
 const adminRoutes = require("./routes/admin");
+const policyRoutes = require("./routes/policyRoutes"); // Import policy routes
 const authRoutes = require("./routes/auth"); // Ensure this file exists
 const verifyToken = require('./middleware/verifyToken'); // Import verifyToken middleware
 const verifyAdmin = require('./middleware/verifyAdmin'); // Import verifyAdmin middleware
@@ -37,6 +38,7 @@ connectDB();
 app.use('/api/users', userRoutes);
 app.use("/api/auth", authRoutes); // Register auth routes
 app.use('/api/admin', adminRoutes);
+app.use('/api/policies', policyRoutes); // Register policy routes
 
 app.get('/', (req, res) => {
   res.send('API is running...');
