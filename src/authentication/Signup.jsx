@@ -22,7 +22,6 @@ const Signup = () => {
   const togglePasswordVisibility = () => setPasswordVisible((prev) => !prev);
   const toggleConfirmPasswordVisibility = () => setConfirmPasswordVisible((prev) => !prev);
 
-  // Password validation regex
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,10}$/;
 
   const validatePassword = (password) => {
@@ -35,7 +34,6 @@ const Signup = () => {
     return null;
   };
 
-  // Generate a DID
   const generateDID = () => {
     if (didGenerated) return;
     const newDid = `did:ethr:${crypto.randomUUID()}`;
@@ -44,12 +42,21 @@ const Signup = () => {
     toast.success("DID generated successfully!");
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!firstName || !secondName || !email || !idNumber || !password || !confirmPassword || !did) {
       toast.error("Please fill in all fields");
+      return;
+    }
+
+    if (!/^\d{8}$/.test(idNumber)) {
+      toast.error("ID number must be 8 digits.");
+      return;
+    }
+
+    if (!email.endsWith("@gmail.com")) {
+      toast.error("Email must be a @gmail.com address.");
       return;
     }
 

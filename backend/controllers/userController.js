@@ -10,7 +10,13 @@ exports.registerUser = async (req, res) => {
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
     }
-
+    if (!/^\d{8}$/.test(idNumber)) {
+      return res.status(400).json({ message: "ID number must be 8 digits" });
+    }
+    
+    if (!email.endsWith("@gmail.com")) {
+      return res.status(400).json({ message: "Email must be a @gmail.com address" });
+    }
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
