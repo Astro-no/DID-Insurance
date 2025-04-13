@@ -7,6 +7,7 @@ import ProtectedAdminRoute from "./authentication/ProtectedAdminRoute"; // Impor
 import { ToastContainer } from "react-toastify";
 import MyPolicies from "./pages/policies/MyPolicies";
 import ViewPolicies from "./pages/policies/ViewPolicies";
+import MyProfile from "./pages/home/MyProfile";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/home" element={<Home />} />
         <Route path="/my-policies" element={<MyPolicies />} />
+        <Route path="/myprofile" element={<MyProfile />} />
         <Route path="/view-policies" element={<ViewPolicies />} />
         <Route path="/admin" element={
           <ProtectedAdminRoute>

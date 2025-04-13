@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
     },
   },  
   password: { type: String, required: true },
-  did: { type: String, required: true },
+  did: { type: String, required: true, unique: true },
   role: { type: String, default: "pending" },
   status: { type: String, default: "pending" }
 });

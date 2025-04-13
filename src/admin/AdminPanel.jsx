@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import CreatePolicy from "../pages/home/CreatePolicy";
 import VerifyClaim from "../pages/home/VerifyClaim";
+import axios from "axios";
 
 const AdminPanel = ({ contract, accounts }) => {
   const [users, setUsers] = useState([]);
@@ -16,24 +17,37 @@ const AdminPanel = ({ contract, accounts }) => {
     policyPrice: "",
     policyDuration: "",
     insuranceCompany: "AIG",
-    coveredHospital: "Agha Khan"
+    coveredHospital: "Agha Khan",
+    coverageDetails: "" // Coverage details input field
   });
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/admin/users", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        const data = await response.json();
-        setUsers(data);
-      } catch (error) {
-        console.error("Error fetching users:", error);
+    const token = localStorage.getItem("token");
+    
+    if (!token) {
+      console.error("No authentication token found");
+      return;
+    }
+    
+    axios.get("http://localhost:5000/api/admin/users", {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+    .then((response) => {
+        const fetchedUsers = response.data?.users || response.data;
+        if (Array.isArray(fetchedUsers)) {
+            setUsers(fetchedUsers);
+        } else {
+            console.error("Unexpected response format:", response.data);
+        }
+    })
+    .catch(error => {
+      console.error("Error fetching users:", error);
+      // Handle authentication errors (redirect to login page if needed)
+      if (error.response && error.response.status === 401) {
+        // You could redirect to login here
+        // For example: window.location.replace("/login");
       }
-    };
-    fetchUsers();
+    });
   }, []);
   
   // Fetch policies when viewing the policies list
@@ -45,9 +59,16 @@ const AdminPanel = ({ contract, accounts }) => {
 
   const fetchPolicies = async () => {
     try {
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        console.error("No authentication token found");
+        return;
+      }
+      
       const response = await fetch("http://localhost:5000/api/policies", {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       
@@ -70,9 +91,16 @@ const AdminPanel = ({ contract, accounts }) => {
     }
 
     try {
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        console.error("No authentication token found");
+        return;
+      }
+      
       const response = await fetch(`http://localhost:5000/api/admin/users/did/${did}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -90,11 +118,18 @@ const AdminPanel = ({ contract, accounts }) => {
 
   const approveUser = async (userId) => {
     try {
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        console.error("No authentication token found");
+        return;
+      }
+      
       const response = await fetch(`http://localhost:5000/api/auth/approve-user/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ role: "user" }),
       });
@@ -123,11 +158,18 @@ const AdminPanel = ({ contract, accounts }) => {
     e.preventDefault();
     
     try {
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        console.error("No authentication token found");
+        return;
+      }
+      
       const response = await fetch("http://localhost:5000/api/policies/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(policyForm),
       });
@@ -143,7 +185,8 @@ const AdminPanel = ({ contract, accounts }) => {
           policyPrice: "",
           policyDuration: "",
           insuranceCompany: "AIG",
-          coveredHospital: "Agha Khan"
+          coveredHospital: "Agha Khan",
+          coverageDetails: "" // Reset coverage details
         });
         
         // Switch to policies list view
@@ -231,32 +274,34 @@ const AdminPanel = ({ contract, accounts }) => {
                   <th className="px-4 py-2 text-left">Email</th>
                   <th className="px-4 py-2 text-left">Status</th>
                   <th className="px-4 py-2 text-left">Role</th>
-                  <th className="px-4 py-2 text-center">Actions</th>
+                  <th className="px-4 py-2 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {users.filter(user => user.status !== "approved").length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="text-center py-4 text-gray-500">No users pending approval</td>
+                {users.map((user) => (
+                  <tr key={user._id} className="border-b border-gray-200">
+                    <td className="px-4 py-2">{user.firstName} {user.secondName}</td>
+                    <td className="px-4 py-2">{user.email}</td>
+                    <td className="px-4 py-2">{user.status}</td>
+                    <td className="px-4 py-2">{user.role}</td>
+                    <td className="px-4 py-2">
+                      {user.status !== "approved" && (
+                        <button 
+                          onClick={() => approveUser(user._id)} 
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg"
+                        >
+                          Approve
+                        </button>
+                      )}
+                    </td>
                   </tr>
-                ) : (
-                  users.filter(user => user.status !== "approved").map((user) => (
-                    <tr key={user._id} className="border-t">
-                      <td className="px-4 py-3">{user.firstName} {user.secondName}</td>
-                      <td className="px-4 py-3">{user.email}</td>
-                      <td className={`px-4 py-3 font-medium ${user.status === "approved" ? "text-green-600" : "text-red-500"}`}>{user.status}</td>
-                      <td className="px-4 py-3">{user.role}</td>
-                      <td className="px-4 py-3 text-center">
-                        <button onClick={() => approveUser(user._id)} className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 transition">Approve</button>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           </>
         )}
 
+        {/* Policy creation form */}
         {view === "policies" && (
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">Create New Policy</h2>
@@ -274,119 +319,60 @@ const AdminPanel = ({ contract, accounts }) => {
                     required
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (USD)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Policy Description</label>
+                  <textarea
+                    name="policyDescription"
+                    value={policyForm.policyDescription}
+                    onChange={handlePolicyFormChange}
+                    placeholder="Enter policy description"
+                    className="w-full border border-gray-300 rounded-lg p-2 h-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Policy Price</label>
                   <input
                     type="number"
                     name="policyPrice"
                     value={policyForm.policyPrice}
                     onChange={handlePolicyFormChange}
-                    placeholder="Enter price"
+                    placeholder="Enter policy price"
                     className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration (months)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Policy Duration (Months)</label>
                   <input
                     type="number"
                     name="policyDuration"
                     value={policyForm.policyDuration}
                     onChange={handlePolicyFormChange}
-                    placeholder="Enter duration in months"
+                    placeholder="Enter policy duration"
                     className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
-                
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Insurance Provider</label>
-                  <select
-                    name="insuranceCompany"
-                    value={policyForm.insuranceCompany}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Coverage Details</label>
+                  <textarea
+                    name="coverageDetails"
+                    value={policyForm.coverageDetails}
                     onChange={handlePolicyFormChange}
-                    className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter coverage details"
+                    className="w-full border border-gray-300 rounded-lg p-2 h-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
-                  >
-                    <option value="AIG">AIG</option>
-                    <option value="Jubilee">Jubilee</option>
-                    <option value="NHIF">NHIF</option>
-                    <option value="AAR">AAR</option>
-                  </select>
+                  />
                 </div>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Policy Description</label>
-                <textarea
-                  name="policyDescription"
-                  value={policyForm.policyDescription}
-                  onChange={handlePolicyFormChange}
-                  placeholder="Enter detailed policy description"
-                  className="w-full border border-gray-300 rounded-lg p-2 h-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Covered Hospital</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      id="aghaKhan"
-                      name="coveredHospital"
-                      value="Agha Khan"
-                      checked={policyForm.coveredHospital === "Agha Khan"}
-                      onChange={handlePolicyFormChange}
-                      className="mr-2 focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
-                    />
-                    <label htmlFor="aghaKhan" className="text-gray-700">Agha Khan Hospital</label>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      id="nairobiHospital"
-                      name="coveredHospital"
-                      value="Nairobi Hospital"
-                      checked={policyForm.coveredHospital === "Nairobi Hospital"}
-                      onChange={handlePolicyFormChange}
-                      className="mr-2 focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
-                    />
-                    <label htmlFor="nairobiHospital" className="text-gray-700">Nairobi Hospital</label>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      id="kenyattaHospital"
-                      name="coveredHospital"
-                      value="Kenyatta Hospital"
-                      checked={policyForm.coveredHospital === "Kenyatta Hospital"}
-                      onChange={handlePolicyFormChange}
-                      className="mr-2 focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
-                    />
-                    <label htmlFor="kenyattaHospital" className="text-gray-700">Kenyatta Hospital</label>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      id="mpshahHospital"
-                      name="coveredHospital"
-                      value="MP Shah Hospital"
-                      checked={policyForm.coveredHospital === "MP Shah Hospital"}
-                      onChange={handlePolicyFormChange}
-                      className="mr-2 focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
-                    />
-                    <label htmlFor="mpshahHospital" className="text-gray-700">MP Shah Hospital</label>
-                  </div>
-                </div>
-              </div>
-              
+
               <div className="flex justify-end mt-6">
                 <button 
                   type="submit" 
@@ -399,54 +385,41 @@ const AdminPanel = ({ contract, accounts }) => {
           </div>
         )}
 
+        {/* Policies List */}
         {view === "policiesList" && (
           <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-semibold text-gray-800">All Policies</h2>
-              <button 
-                onClick={fetchPolicies} 
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                Refresh
-              </button>
-            </div>
-            
-            {policies.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                No policies found. Create some policies to see them here.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
-                  <thead>
-                    <tr className="bg-gray-200 text-gray-700 uppercase text-sm">
-                      <th className="px-4 py-2 text-left">Name</th>
-                      <th className="px-4 py-2 text-left">Price</th>
-                      <th className="px-4 py-2 text-left">Duration</th>
-                      <th className="px-4 py-2 text-left">Provider</th>
-                      <th className="px-4 py-2 text-left">Hospital</th>
-                      <th className="px-4 py-2 text-left">Created</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {policies.map((policy) => (
-                      <tr key={policy._id} className="border-t hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium text-blue-600">{policy.policyName}</td>
-                        <td className="px-4 py-3">${policy.policyPrice}</td>
-                        <td className="px-4 py-3">{policy.policyDuration} months</td>
-                        <td className="px-4 py-3">{policy.insuranceCompany}</td>
-                        <td className="px-4 py-3">{policy.coveredHospital}</td>
-                        <td className="px-4 py-3">{formatDate(policy.createdAt)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Policy List</h2>
+            <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <thead>
+                <tr className="bg-gray-200 text-gray-700 uppercase text-sm">
+                  <th className="px-4 py-2 text-left">Policy Name</th>
+                  <th className="px-4 py-2 text-left">Policy Description</th>
+                  <th className="px-4 py-2 text-left">Price</th>
+                  <th className="px-4 py-2 text-left">Duration (Months)</th>
+                  <th className="px-4 py-2 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {policies.map((policy) => (
+                  <tr key={policy._id} className="border-b border-gray-200">
+                    <td className="px-4 py-2">{policy.policyName}</td>
+                    <td className="px-4 py-2">{policy.policyDescription}</td>
+                    <td className="px-4 py-2">{policy.policyPrice}</td>
+                    <td className="px-4 py-2">{policy.policyDuration}</td>
+                    <td className="px-4 py-2">
+                      <button 
+                        onClick={() => {/* Handle policy actions like view or update */}} 
+                        className="bg-yellow-600 text-white px-4 py-2 rounded-lg"
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-
-        {view === "claims" && <VerifyClaim contract={contract} accounts={accounts} />}
       </div>
     </div>
   );

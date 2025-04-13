@@ -7,7 +7,7 @@ const User = require("../models/User");
 const verifyAdmin = require("../middleware/verifyAdmin");
 const verifyToken = require("../middleware/verifyToken");
 
-dotenv.config();
+dotenv.config();  
 
 // ========== USER SIGNUP ==========
 router.post("/signup", async (req, res) => {
@@ -59,7 +59,16 @@ router.post("/login", async (req, res) => {
 
     const token = jwt.sign({ id: user._id, did: user.did }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
-    res.json({ token, user });
+    res.json({
+      message: "Login successful",
+      token,
+      user: {
+        name: `${user.firstName} ${user.secondName}`, // full name
+        email: user.email,
+        role: user.role,
+        did: user.did,
+      },
+    });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ message: "Server error", error });
@@ -80,7 +89,16 @@ router.post("/login-did", async (req, res) => {
 
     const token = jwt.sign({ id: user._id, did: user.did }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
-    res.json({ token, user });
+    res.json({
+      message: "DID login successful",
+      token,
+      user: {
+        name: `${user.firstName} ${user.secondName}`,
+        email: user.email,
+        role: user.role,
+        did: user.did,
+      },
+    });
   } catch (error) {
     console.error("DID login error:", error);
     res.status(500).json({ message: "Server error", error });
@@ -112,11 +130,37 @@ router.get("/me", verifyToken, async (req, res) => {
     const user = await User.findById(req.user.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    res.json(user);
+    res.json({
+      role: user.role, // Send the role along with the user data
+      name: `${user.firstName} ${user.secondName}`,
+      email: user.email,
+      did: user.did,
+    });;
   } catch (error) {
     console.error("Get user error:", error);
     res.status(500).json({ message: "Server error", error });
   }
 });
+
+// ========== THE USER PROFILE ==========
+router.get("users/profile", verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Send full name
+    res.json({
+      name: `${user.firstName} ${user.secondName}`,
+      email: user.email,
+      role: user.role,
+      did: user.did,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+
+
 
 module.exports = router;

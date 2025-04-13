@@ -2,6 +2,7 @@ const axios = require("axios");
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+
 const mongoose = require("mongoose");
 const userRoutes = require('./routes/userRoutes'); // Import user routes
 const adminRoutes = require("./routes/admin");
@@ -9,8 +10,11 @@ const policyRoutes = require("./routes/policyRoutes"); // Import policy routes
 const authRoutes = require("./routes/auth"); // Ensure this file exists
 const verifyToken = require('./middleware/verifyToken'); // Import verifyToken middleware
 const verifyAdmin = require('./middleware/verifyAdmin'); // Import verifyAdmin middleware
+const profileRoutes = require("./routes/profile"); // Adjust path if needed
 
-dotenv.config({ path: './.env' });
+dotenv.config({ path: './backend/.env' });
+console.log("MONGO_URI from .env:", process.env.MONGO_URI);
+
 const app = express();
 
 const connectDB = async () => {
@@ -39,6 +43,7 @@ app.use('/api/users', userRoutes);
 app.use("/api/auth", authRoutes); // Register auth routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/policies', policyRoutes); // Register policy routes
+app.use("/api/profile", profileRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');
