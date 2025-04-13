@@ -33,7 +33,27 @@ const ViewPolicies = () => {
     setShowConfirmModal(false);
     setSelectedPolicy(null);
   };
-
+  const updateUserRoleToPolicyholder = async () => {
+    try {
+      const token = localStorage.getItem("token");
+  
+      await axios.put(
+        "http://localhost:5000/api/updateRole", // adjust if you use a different endpoint
+        { role: "policyholder" },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      console.log("User role updated to policyholder");
+      localStorage.setItem("role", "policyholder"); // Optional: if you're storing it locally
+    } catch (error) {
+      console.error("Failed to update user role:", error);
+    }
+  };
+  
   const handleRegisterConfirm = async () => {
     if (!selectedPolicy) return;
 
@@ -60,8 +80,8 @@ const ViewPolicies = () => {
       );
 
       if (response.data.success) {
+        await updateUserRoleToPolicyholder(); // 👈 update role after registering
         alert("Policy registered successfully!");
-        // You can redirect to a "My Policies" page or update UI as needed
         navigate("/my-policies");
       } else {
         alert(`Registration failed: ${response.data.message}`);

@@ -6,6 +6,8 @@ const dotenv = require("dotenv");
 const User = require("../models/User");
 const verifyAdmin = require("../middleware/verifyAdmin");
 const verifyToken = require("../middleware/verifyToken");
+const authenticate = require("../middleware/verifyToken");
+
 
 dotenv.config();  
 
@@ -143,7 +145,7 @@ router.get("/me", verifyToken, async (req, res) => {
 });
 
 // ========== THE USER PROFILE ==========
-router.get("users/profile", verifyToken, async (req, res) => {
+router.get("/users/profile", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -160,7 +162,21 @@ router.get("users/profile", verifyToken, async (req, res) => {
   }
 });
 
+// Update user role to policyholder
+router.put("/updateRole", authenticate, async (req, res) => {
+  const userId = req.user.id; // comes from the auth middleware
+  const { role } = req.body;
 
+  try {
+    const user = await User.findByIdAndUpdate(userId, { role }, { new: true });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({ message: "Role updated successfully", user });
+  } catch (error) {
+    console.error("Error updating role:", error);
+    res.status(500).json({ message: "Error updating role" });
+  }
+});
 
 
 module.exports = router;

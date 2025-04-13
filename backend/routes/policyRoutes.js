@@ -135,18 +135,17 @@ router.get('/:id', async (req, res) => {
 });
 
 // Register for a policy
+// Register for a policy
 router.post('/register', verifyToken, async (req, res) => {
   const { policyId } = req.body;
-  const userId = req.user.id; // From verifyToken middleware
+  const userId = req.user.id;
 
   try {
-    // Check if policy exists
     const policy = await Policy.findById(policyId);
     if (!policy) {
       return res.status(404).json({ success: false, message: 'Policy not found' });
     }
 
-    // Check if user already registered for this policy
     const existingRegistration = await PolicyRegistration.findOne({
       user: userId,
       policy: policyId,
@@ -159,16 +158,19 @@ router.post('/register', verifyToken, async (req, res) => {
       });
     }
 
-    // Create new policy registration
     const policyRegistration = new PolicyRegistration({
       user: userId,
       policy: policyId,
       status: 'active',
       registrationDate: Date.now(),
-      expiryDate: new Date(Date.now() + policy.policyDuration * 30 * 24 * 60 * 60 * 1000), // Approximate months to milliseconds
+      expiryDate: new Date(Date.now() + policy.policyDuration * 30 * 24 * 60 * 60 * 1000),
     });
 
     await policyRegistration.save();
+
+    // 🔥 Update user role to "policyholder"
+    const User = require("../models/User");
+    await User.findByIdAndUpdate(userId, { role: "policyholder" });
 
     res.status(201).json({
       success: true,
@@ -184,5 +186,6 @@ router.post('/register', verifyToken, async (req, res) => {
     });
   }
 });
+
 
 module.exports = router;
