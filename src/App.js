@@ -8,6 +8,10 @@ import { ToastContainer } from "react-toastify";
 import MyPolicies from "./pages/policies/MyPolicies";
 import ViewPolicies from "./pages/policies/ViewPolicies";
 import MyProfile from "./pages/home/MyProfile";
+import { ContractProvider } from "./context/ContractContext";
+import FileClaim from "./pages/home/FileClaim";
+import RecordProcedure from "./pages/home/RecordProcedure";
+
 
 function App() {
   return (
@@ -18,15 +22,18 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/home" element={<Home />} />
-        <Route path="/my-policies" element={<MyPolicies />} />
+        <Route path="/policyholder-dashboard" element={<MyPolicies />} />
         <Route path="/myprofile" element={<MyProfile />} />
+        <Route path="/file-claim/:policyId" element={<FileClaim />} />
         <Route path="/view-policies" element={<ViewPolicies />} />
+        <Route path="/record-procedure" element={<RecordProcedure />} />
         <Route path="/admin" element={
           <ProtectedAdminRoute>
             <AdminPanel />
           </ProtectedAdminRoute>
           
         } 
+        
 />
       </Routes>
     </Router>

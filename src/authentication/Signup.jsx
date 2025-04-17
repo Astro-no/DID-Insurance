@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import { Mail, Lock, Eye, EyeOff, User, IdCard } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
+import { ContractContext } from "../context/ContractContext";
 
 const Signup = () => {
+  const contractContext = useContext(ContractContext);
+  const navigate = useNavigate();
+
+  // Declare all hooks at the top level
   const [firstName, setFirstName] = useState("");
   const [secondName, setSecondName] = useState("");
   const [email, setEmail] = useState("");
@@ -17,7 +22,22 @@ const Signup = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
-  const navigate = useNavigate();
+  // Check if context is ready
+  if (!contractContext || !contractContext.account || !contractContext.didRegisterContract) {
+    console.log("ContractContext:", contractContext); // Debugging log
+  console.log("Account:", contractContext?.account); // Debugging log
+  console.log("DID Register Contract:", contractContext?.didRegisterContract); // Debugging log
+  
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-gray-100">
+        <div className="text-lg text-gray-700">Connecting to wallet...</div>
+        <ToastContainer />
+      </div>
+    );
+  }
+
+  // Use context after check
+  const { account, didRegisterContract } = contractContext;
 
   const togglePasswordVisibility = () => setPasswordVisible((prev) => !prev);
   const toggleConfirmPasswordVisibility = () => setConfirmPasswordVisible((prev) => !prev);
@@ -40,6 +60,18 @@ const Signup = () => {
     setDid(newDid);
     setDidGenerated(true);
     toast.success("DID generated successfully!");
+  };
+
+  const registerOnChainDID = async () => {
+    try {
+      const tx = await didRegisterContract.registerDID("Policyholder", account);
+      await tx.wait();
+      console.log("DID registered on chain!");
+      toast.success("DID successfully registered on blockchain.");
+    } catch (err) {
+      console.error("Failed to register DID on chain:", err);
+      toast.error("Failed to register DID on the blockchain.");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -93,6 +125,7 @@ const Signup = () => {
 
       if (response.ok) {
         toast.success("Signup successful! Awaiting admin approval.");
+        await registerOnChainDID(); // Register DID on blockchain
         setTimeout(() => navigate("/login"), 2000);
       } else {
         toast.error(data.message || data.error || "Signup failed.");

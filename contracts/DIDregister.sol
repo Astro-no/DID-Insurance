@@ -50,6 +50,19 @@ contract DIDregister {
 
         emit DIDCreated(_policyholder, _did, _policyId);
     }
+    function registerHospitalDID(
+    address _hospital,
+    string memory _did
+) external onlyAdmin onlyUniqueDID(_did) {
+    require(bytes(_did).length > 0, "DID cannot be empty");
+    require(!dids[_hospital].isActive, "DID already exists");
+
+    dids[_hospital] = DID(_did, true, 0); // 0 as dummy policy ID
+    didToAddress[_did] = _hospital;
+
+    emit DIDCreated(_hospital, _did, 0);
+}
+
 
     function verifyDID(string memory _did) public view returns (bool) {
         address holder = didToAddress[_did];

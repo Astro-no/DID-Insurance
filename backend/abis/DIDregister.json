@@ -1,0 +1,121 @@
+[
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"name": "didExists",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "dids",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "did",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "isActive",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "policyId",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_holder",
+				"type": "address"
+			}
+		],
+		"name": "getDIDDetails",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_holder",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "_did",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_policyId",
+				"type": "uint256"
+			}
+		],
+		"name": "registerDID",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_did",
+				"type": "string"
+			}
+		],
+		"name": "verifyDID",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]

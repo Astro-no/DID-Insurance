@@ -1,15 +1,17 @@
 import { Mail, Lock, Eye, EyeClosed, Key } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
 import Preloader from "../pages/home/Preloader";
+import { getDID } from "../services/contractService"; // Assuming you have this service to interact with smart contract
 
 const Login = () => {
+  const [user, setUser] = useState(null);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [did, setDid] = useState(""); // For DID login
+  const [did, setDid] = useState("");
   const [useDidLogin, setUseDidLogin] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -32,30 +34,47 @@ const Login = () => {
         password
       });
 
-      localStorage.setItem("token", response.data.token);
-      sessionStorage.setItem("isAuthenticated", true);
+      const user = response.data.user;
+      console.log("User from response:", user);
+      
+      // Check if status exists before using it
+      if (user.status && user.status !== "approved") {
+        toast.error(`Account ${user.status}. Please wait for admin approval.`);
+        setLoading(false);
+        return;
+      }
 
-      if (response.data.user) {
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("isAuthenticated", true);
+
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user)); // Save to localStorage
+        setUser(user);  // Update the state with user data
       }
 
       toast.success("Login successful!");
 
-      // Check user role and navigate accordingly
-      const userRole = response.data.user.role;
+      const userRole = user.role;
+      console.log("Role before navigation:", userRole);
+
 
       setTimeout(() => {
+        console.log("Navigating to:", userRole);
         setLoading(false);
+        
         if (userRole === "admin") {
           navigate("/admin");
         } else if (userRole === "policyholder") {
           navigate("/policyholder-dashboard");
         } else if (userRole === "hospital") {
-          navigate("/hospital-dashboard");
+          navigate("/record-procedure");
+        } else if (userRole === "user") {
+          navigate("/view-policies");
         } else {
           navigate("/home");
         }
       }, 3000);
+      
     } catch (error) {
       setLoading(false);
       const errorMessage = error.response?.data?.message || "Invalid email or password";
@@ -63,40 +82,87 @@ const Login = () => {
       setPassword("");
     }
   };
+  
+  useEffect(() => {
+    console.log("User object:", user); // Ensure the user object is available
+  }, [user]); // This will log whenever the `user` state changes
 
   const handleDidLogin = async (e) => {
     e.preventDefault();
+  
+    // Check if MetaMask is installed
+    if (typeof window.ethereum === 'undefined') {
+      alert('Please install MetaMask to use this feature');
+      return;
+    }
+  
     if (!did) {
       toast.error("Please enter your DID");
       return;
     }
-
+  
     try {
       setLoading(true);
+  
+      // Request accounts from MetaMask
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const currentAccount = accounts[0].toLowerCase();
+  
+      // Fetch DID associated with the current MetaMask account
+      const fetchedDID = await getDID(currentAccount);
+  
+      // Check if the DID entered matches the fetched DID from MetaMask
+      if (!fetchedDID || fetchedDID.toLowerCase() !== did.toLowerCase()) {
+        toast.error("DID does not match your connected wallet address.");
+        setLoading(false);
+        return;
+      }
+  
+      // Send DID to backend for authentication
       const response = await axios.post("http://localhost:5000/api/auth/login-did", {
         did
       });
-
+  
+      const user = response.data.user;
+      console.log("User from response:", user);
+  
+      // Check user status only if it exists
+      if (user && user.status && user.status !== "active" && user.status !== "approved") {
+        console.log("User object:", user);
+        console.log("User status:", user.status);
+        toast.error(`Account ${user.status || "pending"}. Please wait for admin approval.`);
+        setLoading(false);
+        return;
+      }
+  
       localStorage.setItem("token", response.data.token);
       sessionStorage.setItem("isAuthenticated", true);
-
-      if (response.data.user) {
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+  
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user));
+        setUser(user); // optional but useful for debugging
       }
-
+  
       toast.success("DID login successful!");
-
-      // Check user role and navigate accordingly
-      const userRole = response.data.user.role;
-
+  
+      const userRole = user.role;
+  
+      // Prevent admin from logging in via DID
+      if (userRole === "admin") {
+        toast.error("Admin accounts must log in using email.");
+        setLoading(false);
+        return;
+      }
+  
+      // Navigate based on user role
       setTimeout(() => {
         setLoading(false);
-        if (userRole === "admin") {
-          navigate("/admin");
-        } else if (userRole === "policyholder") {
+        if (userRole === "policyholder") {
           navigate("/policyholder-dashboard");
         } else if (userRole === "hospital") {
           navigate("/hospital-dashboard");
+        } else if (userRole === "user") {
+          navigate("/view-policies");
         } else {
           navigate("/home");
         }
@@ -108,7 +174,7 @@ const Login = () => {
       setDid("");
     }
   };
-
+  
   return (
     <div className="min-h-screen flex justify-center items-center bg-gray-100">
       <div className="bg-white p-8 rounded-sm shadow-lg w-full max-w-[500px]">
@@ -117,7 +183,6 @@ const Login = () => {
         </h2>
 
         {useDidLogin ? (
-          // Login with DID
           <form onSubmit={handleDidLogin}>
             <div className="mb-6">
               <p className="text-sm font-medium text-gray-600">Enter Your DID</p>
@@ -143,7 +208,6 @@ const Login = () => {
             </button>
           </form>
         ) : (
-          // Login with Email & Password
           <form onSubmit={handleEmailLogin}>
             <div className="mb-4">
               <p className="text-sm font-medium text-gray-600">Email Address</p>
@@ -188,7 +252,6 @@ const Login = () => {
           </form>
         )}
 
-        {/* Toggle between Login Methods */}
         <div className="mt-4 text-center">
           <button
             className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
@@ -198,7 +261,6 @@ const Login = () => {
           </button>
         </div>
 
-        {/* Sign-Up Link */}
         <div className="mt-4 text-center">
           <p className="text-sm text-gray-600">
             Don't have an account?{" "}
