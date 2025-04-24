@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios"; // For sending VC to the policyholder
 
-const RecordProcedure = ({ contract, accounts, policyholderAddress, getDID }) => {
+const RecordProcedure = ({ contract, accounts, getDID }) => {
   const [procedureName, setProcedureName] = useState("");
   const [procedureTimestamp, setProcedureTimestamp] = useState("");
+  const [patientDID, setPatientDID] = useState(""); // New: input by hospital
   const [vcData, setVcData] = useState(null); // State to store VC data
   const [loading, setLoading] = useState(false);
   const [hospitalDID, setHospitalDID] = useState(""); // To store hospital DID
@@ -11,16 +12,17 @@ const RecordProcedure = ({ contract, accounts, policyholderAddress, getDID }) =>
   useEffect(() => {
     const fetchHospitalDID = async () => {
       try {
-        // Get the hospital's DID (this function should retrieve it from a DID registry or other source)
-        const hospitalDID = await getDID(accounts[0]); // Assuming getDID is a function that fetches DID
+        const hospitalDID = await getDID(accounts[0]);
         setHospitalDID(hospitalDID);
       } catch (error) {
         console.error("Failed to fetch DID:", error);
       }
     };
 
-    if (accounts[0]) {
+    if (accounts && accounts.length > 0) {
       fetchHospitalDID();
+    } else {
+      console.log("Accounts not available yet in RecordProcedure.");
     }
   }, [accounts, getDID]);
 
@@ -28,29 +30,30 @@ const RecordProcedure = ({ contract, accounts, policyholderAddress, getDID }) =>
     event.preventDefault();
     setLoading(true);
     try {
-      // Convert the procedureTimestamp to a Unix timestamp
       const timestamp = Math.floor(new Date(procedureTimestamp).getTime() / 1000);
 
-      // Record procedure on the smart contract
+      if (!contract || !contract.methods) {
+        alert("Smart contract not loaded. Please make sure you're connected to MetaMask.");
+        setLoading(false);
+        return;
+      }      
       await contract.methods
         .recordProcedure(procedureName, timestamp)
         .send({ from: accounts[0] });
 
       alert("Procedure recorded successfully!");
 
-      // Create Verifiable Credential (VC) with the hospital's DID
       const vc = {
         procedureName,
         procedureTimestamp: timestamp,
-        hospitalDID, // Add the hospital's DID here
-        policyholderDID: policyholderAddress, // Assuming policyholderAddress is the DID of the policyholder
-        issuedTo: policyholderAddress, // Policyholder address to whom the VC is issued
+        hospitalDID,
+        policyholderDID: patientDID,
+        issuedTo: patientDID,
         issuanceDate: new Date().toISOString(),
       };
 
-      setVcData(vc); // Store VC in state
+      setVcData(vc);
 
-      // Optionally, send the VC to the backend to store or send to the policyholder
       await sendVCToPolicyholder(vc);
 
       alert("Verifiable Credential generated and sent to the policyholder!");
@@ -62,12 +65,11 @@ const RecordProcedure = ({ contract, accounts, policyholderAddress, getDID }) =>
     }
   };
 
-  // Function to send VC to the policyholder (via backend or smart contract)
   const sendVCToPolicyholder = async (vc) => {
     try {
       const response = await axios.post("http://localhost:5000/api/send-vc", {
         vc,
-        policyholderAddress,
+        policyholderAddress: patientDID,
       });
       console.log("VC sent to policyholder:", response.data);
     } catch (error) {
@@ -81,6 +83,16 @@ const RecordProcedure = ({ contract, accounts, policyholderAddress, getDID }) =>
         Record Procedure
       </h2>
       <form onSubmit={handleRecordProcedure} className="space-y-6">
+        <div>
+          <input
+            type="text"
+            placeholder="Patient's DID"
+            value={patientDID}
+            onChange={(e) => setPatientDID(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-orange-500"
+            required
+          />
+        </div>
         <div>
           <input
             type="text"
@@ -108,7 +120,6 @@ const RecordProcedure = ({ contract, accounts, policyholderAddress, getDID }) =>
         </button>
       </form>
 
-      {/* Display VC Data (for debugging purposes) */}
       {vcData && (
         <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
           <h3 className="text-xl font-semibold">Generated Verifiable Credential (VC)</h3>

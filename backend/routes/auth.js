@@ -7,6 +7,7 @@ const User = require("../models/User");
 const verifyAdmin = require("../middleware/verifyAdmin");
 const verifyToken = require("../middleware/verifyToken");
 const authenticate = require("../middleware/verifyToken");
+const Hospital = require("../models/Hospital"); // Assuming your Hospital model is in "../models/Hospital.js"
 
 
 dotenv.config();  
