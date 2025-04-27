@@ -1,18 +1,19 @@
 import Web3 from "web3";
 import DIDregisterABI from "../contracts/abis/DIDregister.json";
-//import DIDregisterABI from "../contracts/abis/DIDregister.json";
 import InsuranceABI from "../contracts/abis/Insurance.json";
 
-const web3 = new Web3(window.ethereum);  // Use MetaMask's provider
+// Initialize Web3 using MetaMask provider
+const web3 = new Web3(window.ethereum);
 
-// Contract Addresses - Replace with actual deployed addresses
-const DIDregisterAddress = "0x21ba87e1280beb29a55ac21cffa948eca9f087c8"; // Already provided
-const InsuranceAddress = "0x11d87b3e9f41443438cb88e9b40a31f7cf4fcab3";  // Insurance contract address 
+// Read contract addresses from environment variables
+const DIDregisterAddress = process.env.REACT_APP_DID_REGISTER_CONTRACT_ADDRESS;
+const InsuranceAddress = process.env.REACT_APP_INSURANCE_CONTRACT_ADDRESS;
 
-// Initialize contracts
+// Initialize contract instances
 const DIDregisterContract = new web3.eth.Contract(DIDregisterABI, DIDregisterAddress);
 const InsuranceContract = new web3.eth.Contract(InsuranceABI, InsuranceAddress);
 
+// Fetch a DID associated with an Ethereum address
 export const getDID = async (address) => {
   try {
     const did = await DIDregisterContract.methods.getDID(address).call();
@@ -23,7 +24,8 @@ export const getDID = async (address) => {
   }
 };
 
-export const createInsurancePolicy = async (address, policyData) => {
+// Create a new insurance policy
+export const createInsurancePolicy = async (policyData) => {
   try {
     const accounts = await web3.eth.getAccounts();
     await InsuranceContract.methods.createPolicy(policyData).send({ from: accounts[0] });
@@ -31,5 +33,3 @@ export const createInsurancePolicy = async (address, policyData) => {
     console.error("Error creating insurance policy:", error);
   }
 };
-
-

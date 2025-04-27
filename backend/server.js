@@ -12,6 +12,7 @@ const verifyToken = require('./middleware/verifyToken'); // Import verifyToken m
 const verifyAdmin = require('./middleware/verifyAdmin'); // Import verifyAdmin middleware
 const profileRoutes = require("./routes/profile"); // Adjust path if needed
 const hospitalAuthRoutes = require('./routes/hospitalAuth');
+const reportsRoutes = require('./routes/reports'); // Import the reports routes
 
 dotenv.config({ path: './backend/.env' });
 console.log("MONGO_URI from .env:", process.env.MONGO_URI);
@@ -34,10 +35,7 @@ const connectDB = async () => {
 
 // Middleware
 app.use(express.json()); // Parse JSON
-app.use(cors()); // Enable CORS
-
-// Connect to MongoDB
-connectDB();
+app.use(cors({ origin: 'http://localhost:3000' })); // Replace with your frontend's URL
 
 // Routes
 app.use('/api/users', userRoutes);
@@ -47,9 +45,13 @@ app.use('/api/policies', policyRoutes); // Register policy routes
 app.use("/api/profile", profileRoutes);
 app.use('/api/verifyToken', verifyToken); // Protect routes with verifyToken middleware
 app.use('/hospital', hospitalAuthRoutes);
+app.use('/api/reports', reportsRoutes);  // Only one import is needed for reportsRoutes
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
+
+// Connect to MongoDB
+connectDB();
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
