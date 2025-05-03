@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import Preloader from "../pages/home/Preloader";
 import { getDID } from "../services/contractService";
+import { useAuth } from "../context/AuthContext"; // Relative to src/authentication
 
 const Login = () => {
   const [user, setUser] = useState(null);
@@ -17,13 +18,24 @@ const Login = () => {
   const [isHospital, setIsHospital] = useState(false);
 
   const navigate = useNavigate();
+  const { setAuthenticatedUser } = useAuth();
 
   const togglePasswordVisibility = () => setPasswordVisible((prev) => !prev);
-  const toggleLoginMethod = () => setUseDidLogin((prev) => !prev);
+
+  const toggleLoginMethod = () => {
+    if (email.toLowerCase().includes("admin")) {
+      toast.warning("Admins must log in using email and password.");
+      return;
+    }
+    setUseDidLogin((prev) => !prev);
+  };
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+  
+    if (!trimmedEmail || !trimmedPassword) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -32,41 +44,38 @@ const Login = () => {
       setLoading(true);
       let response;
   
-      // Conditional login request based on whether it's a hospital or not
       if (isHospital) {
-        console.log("Sending hospital login request...");
         response = await axios.post("http://localhost:5000/hospital/login", {
-          username: email,
-          password,
+          username: trimmedEmail,
+          password: trimmedPassword,
         });
       } else {
         response = await axios.post("http://localhost:5000/api/auth/login", {
-          email,
-          password,
+          email: trimmedEmail,
+          password: trimmedPassword,
         });
       }
   
-      // Check if the response contains user data
       if (response.data && response.data.user) {
         const user = response.data.user;
-        console.log("Login successful, user data:", user);
+        const token = response.data.token;
   
-        // Handle user status
         if (user.status && user.status !== "approved") {
           toast.error(`Account ${user.status}. Please wait for admin approval.`);
           setLoading(false);
           return;
         }
   
-        // Store token and user in localStorage
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("isAuthenticated", true);
-        localStorage.setItem("user", JSON.stringify(user));
+        const did = user.did || `did:ethr:${(user.address || "").toLowerCase()}`;
+        const fullUser = { ...user, did, token };
   
-        setUser(user);
+        // ✅ Use consistent key and structure
+        localStorage.setItem("authenticatedUser", JSON.stringify(fullUser));
+        localStorage.setItem("token", token);
+        setAuthenticatedUser(fullUser);
+  
         toast.success("Login successful!");
   
-        
         const userRole = user.role;
         setTimeout(() => {
           setLoading(false);
@@ -75,10 +84,10 @@ const Login = () => {
           else if (userRole === "hospital") navigate("/record-procedure");
           else if (userRole === "user") navigate("/view-policies");
           else navigate("/home");
-        }, 3000);
+        }, 2000);
       } else {
-        console.error("Login response did not contain user data:", response.data);
         toast.error("Invalid username or password");
+        setLoading(false);
       }
     } catch (error) {
       setLoading(false);
@@ -86,76 +95,95 @@ const Login = () => {
       toast.error(errorMessage);
       setPassword("");
     }
-  };  
-
+  };
+  
   const handleDidLogin = async (e) => {
     e.preventDefault();
-    if (typeof window.ethereum === 'undefined') {
-      alert('Please install MetaMask to use this feature');
+  
+    if (typeof window.ethereum === "undefined") {
+      alert("Please install MetaMask to use this feature");
       return;
     }
-
-    if (!did) {
-      toast.error("Please enter your DID");
+  
+    const trimmedDid = did.trim();
+    if (!trimmedDid || !trimmedDid.startsWith("did:")) {
+      toast.error("Please enter a valid DID (e.g., did:ethr:0x...)");
       return;
     }
-
-    console.log("Attempting DID login. DID:", did);
-
+  
     try {
       setLoading(true);
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
       const currentAccount = accounts[0].toLowerCase();
-      console.log("Connected wallet address:", currentAccount);
       const fetchedDID = await getDID(currentAccount);
-      console.log("Fetched DID from contract:", fetchedDID);
-
-      if (!fetchedDID || fetchedDID.toLowerCase() !== did.toLowerCase()) {
+  
+      if (!fetchedDID || fetchedDID.toLowerCase() !== trimmedDid.toLowerCase()) {
         toast.error("DID does not match your connected wallet address.");
         setLoading(false);
         return;
       }
-
-      console.log("Sending DID login request...");
-      const response = await axios.post("http://localhost:5000/api/auth/login-did", { did });
-      console.log("DID login response:", response);
+  
+      const response = await axios.post("http://localhost:5000/api/auth/login-did", {
+        did: trimmedDid,
+      });
+  
       const user = response.data.user;
-      console.log("DID login successful, user data:", user);
-
+      const token = response.data.token;
+  
       if (user.status && user.status !== "active" && user.status !== "approved") {
         toast.error(`Account ${user.status || "pending"}. Please wait for admin approval.`);
         setLoading(false);
         return;
       }
-
-      localStorage.setItem("token", response.data.token);
-      sessionStorage.setItem("isAuthenticated", true);
-      localStorage.setItem("user", JSON.stringify(user));
-      setUser(user);
-      toast.success("DID login successful!");
-
-      const userRole = user.role;
-      if (userRole === "admin") {
+  
+      if (user.role === "admin") {
         toast.error("Admin accounts must log in using email.");
         setLoading(false);
         return;
       }
-
+  
+      const fullUser = { ...user, token };
+  
+      // ✅ Use consistent key and structure
+      localStorage.setItem("authenticatedUser", JSON.stringify(fullUser));
+      localStorage.setItem("token", token);
+      setAuthenticatedUser(fullUser);
+  
+      toast.success("DID login successful!");
+  
+      const userRole = user.role;
       setTimeout(() => {
         setLoading(false);
-        console.log("Navigating based on role (DID):", userRole);
         if (userRole === "policyholder") navigate("/policyholder-dashboard");
         else if (userRole === "hospital") navigate("/hospital-dashboard");
         else if (userRole === "user") navigate("/view-policies");
         else navigate("/home");
-      }, 3000);
+      }, 2000);
     } catch (error) {
       setLoading(false);
-      console.error("DID login error:", error);
-      console.error("Error response:", error.response);
-      const errorMessage = error.response?.data?.message || "DID not found. Please check your DID.";
+      const errorMessage =
+        error.response?.data?.message || "DID not found. Please check your DID.";
       toast.error(errorMessage);
       setDid("");
+    }
+  };
+  
+  const handleLogin = async (credentials) => {
+    try {
+      const response = await axios.post("http://localhost:5000/api/login", credentials);
+      const user = response.data;
+
+      // Set the authenticated user in the AuthContext
+      setAuthenticatedUser({
+        did: user.did,
+        name: user.name,
+        token: user.token, // Include the token if needed for authenticated requests
+      });
+
+      navigate("/view-policies"); // Redirect to the policies page after login
+    } catch (error) {
+      console.error("Login failed:", error);
+      alert("Login failed. Please check your credentials and try again.");
     }
   };
 

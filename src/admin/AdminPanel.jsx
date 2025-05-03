@@ -13,6 +13,8 @@ const AdminPanel = ({ contract, accounts }) => {
   const [reportType, setReportType] = useState("weekly");
   const [reportDate, setReportDate] = useState("");
   const [reportGenerating, setReportGenerating] = useState(false);
+  const [claims, setClaims] = useState([]);
+  const [loading, setLoading] = useState(true);
   
   // Policy form state
   const [policyForm, setPolicyForm] = useState({
@@ -306,6 +308,48 @@ const AdminPanel = ({ contract, accounts }) => {
     const today = new Date().toISOString().split('T')[0];
     setReportDate(today);
   }, []);
+
+  useEffect(() => {
+    const fetchClaims = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("http://localhost:5000/api/claims/all", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setClaims(response.data);
+      } catch (error) {
+        console.error("Error fetching claims:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchClaims();
+  }, []);
+
+  // Add the updateClaimStatus function here
+  const updateClaimStatus = async (claimId, status) => {
+    try {
+      console.log("Updating claim with ID:", claimId, "to status:", status);
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `http://localhost:5000/api/claims/${claimId}/status`,
+        { status },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      alert(`Claim ${status} successfully!`);
+      setClaims((prevClaims) =>
+        prevClaims.map((claim) =>
+          claim._id === claimId ? { ...claim, status } : claim
+        )
+      );
+    } catch (error) {
+      console.error(`Error updating claim status to ${status}:`, error);
+      alert(`Failed to ${status} claim. Please try again.`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -675,6 +719,58 @@ const AdminPanel = ({ contract, accounts }) => {
               </div>
             </div>
             
+          </div>
+        )}
+
+        {/* Claims verification section */}
+        {view === "claims" && (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Verify Claims</h2>
+            {loading ? (
+              <p>Loading claims...</p>
+            ) : (
+              <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <thead>
+                  <tr className="bg-gray-200 text-gray-700 uppercase text-sm">
+                    <th className="px-4 py-2 text-left">Policy Name</th>
+                    <th className="px-4 py-2 text-left">User</th>
+                    <th className="px-4 py-2 text-left">Claim Amount</th>
+                    <th className="px-4 py-2 text-left">Description</th>
+                    <th className="px-4 py-2 text-left">Status</th>
+                    <th className="px-4 py-2 text-left">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {claims.map((claim) => (
+                    <tr key={claim._id} className="border-b border-gray-200">
+                      <td className="px-4 py-2">{claim.policy.policyName}</td>
+                      <td className="px-4 py-2">{claim.user.name} ({claim.user.email})</td>
+                      <td className="px-4 py-2">{claim.claimAmount}</td>
+                      <td className="px-4 py-2">{claim.description}</td>
+                      <td className="px-4 py-2">{claim.status}</td>
+                      <td className="px-4 py-2">
+                        {claim.status === "pending" && (
+                          <>
+                            <button
+                              onClick={() => updateClaimStatus(claim._id, "approved")}
+                              className="bg-green-600 text-white px-4 py-2 rounded-lg mr-2"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => updateClaimStatus(claim._id, "rejected")}
+                              className="bg-red-600 text-white px-4 py-2 rounded-lg"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         )}
       </div>

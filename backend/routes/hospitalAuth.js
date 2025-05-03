@@ -18,7 +18,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { username: hospital.username, name: hospital.name, did: hospital.did, role: 'hospital' },
-      'secretKey'
+      process.env.JWT_SECRET
     );
 
     const userData = {

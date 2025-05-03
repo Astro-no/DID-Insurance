@@ -1,55 +1,151 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios"; // For sending VC to the policyholder
+import axios from "axios";
 
-const RecordProcedure = ({ contract, accounts, getDID }) => {
+const RecordProcedure = ({ accounts, getDID }) => {
   const [procedureName, setProcedureName] = useState("");
   const [procedureTimestamp, setProcedureTimestamp] = useState("");
-  const [patientDID, setPatientDID] = useState(""); // New: input by hospital
-  const [vcData, setVcData] = useState(null); // State to store VC data
+  const [patientDID, setPatientDID] = useState("");
+  const [vcData, setVcData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [hospitalDID, setHospitalDID] = useState(""); // To store hospital DID
+  const [hospitalDID, setHospitalDID] = useState("");
+  const [fetchingDID, setFetchingDID] = useState(true);
+  const [didError, setDidError] = useState(null);
+  const [currentAccount, setCurrentAccount] = useState("");
 
+  // Function to generate a mock DID from an Ethereum address
+  const generateMockDID = (address) => {
+    if (!address) return null;
+    // Create a simple did:ethr: DID from the address
+    return `did:ethr:${address.toLowerCase()}`;
+  };
+
+  // Use the provided getDID function or fallback to our mock implementation
+  const resolveDID = async (address) => {
+    if (typeof getDID === 'function') {
+      return await getDID(address);
+    } else {
+      console.warn("getDID function not provided, using mock implementation");
+      return generateMockDID(address);
+    }
+  };
+
+  // Effect to handle Web3 and metamask connection
+  useEffect(() => {
+    const connectWallet = async () => {
+      try {
+        // Check if MetaMask is installed
+        if (window.ethereum) {
+          console.log("MetaMask is installed!");
+          
+          // Request account access
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          console.log("Connected accounts:", accounts);
+          
+          if (accounts && accounts.length > 0) {
+            setCurrentAccount(accounts[0]);
+          } else {
+            setDidError("No accounts found. Please connect your wallet.");
+          }
+          
+          // Listen for account changes
+          window.ethereum.on('accountsChanged', (newAccounts) => {
+            console.log("Accounts changed:", newAccounts);
+            if (newAccounts.length > 0) {
+              setCurrentAccount(newAccounts[0]);
+            } else {
+              setCurrentAccount("");
+              setDidError("No accounts connected");
+            }
+          });
+          
+        } else {
+          setDidError("MetaMask is not installed. Please install MetaMask to use this application.");
+        }
+      } catch (error) {
+        console.error("Error connecting to wallet:", error);
+        setDidError("Failed to connect wallet: " + (error.message || "Unknown error"));
+      }
+    };
+    
+    connectWallet();
+    
+    // Cleanup function to remove event listeners
+    return () => {
+      if (window.ethereum) {
+        window.ethereum.removeAllListeners('accountsChanged');
+      }
+    };
+  }, []); // Empty dependency array means this runs once on mount
+
+  // Effect to fetch hospital DID when account is available
   useEffect(() => {
     const fetchHospitalDID = async () => {
+      setFetchingDID(true);
+      setDidError(null);
+      
+      if (!currentAccount) {
+        setDidError("No account available");
+        setFetchingDID(false);
+        return;
+      }
+      
       try {
-        const hospitalDID = await getDID(accounts[0]);
-        setHospitalDID(hospitalDID);
+        console.log("Fetching DID for account:", currentAccount);
+        const did = await resolveDID(currentAccount);
+        console.log("Hospital DID fetched:", did);
+        setHospitalDID(did);
+        setFetchingDID(false);
       } catch (error) {
-        console.error("Failed to fetch DID:", error);
+        console.error("Failed to fetch hospital DID:", error);
+        setDidError(error.message || "Failed to fetch DID");
+        setFetchingDID(false);
       }
     };
 
-    if (accounts && accounts.length > 0) {
+    if (currentAccount) {
       fetchHospitalDID();
-    } else {
-      console.log("Accounts not available yet in RecordProcedure.");
     }
-  }, [accounts, getDID]);
+  }, [currentAccount]);
 
   const handleRecordProcedure = async (event) => {
     event.preventDefault();
+    
+    if (!currentAccount) {
+      alert("Please connect your wallet first.");
+      return;
+    }
+    
+    if (fetchingDID) {
+      alert("Still fetching hospital DID. Please wait a moment and try again.");
+      return;
+    }
+    
+    if (!hospitalDID) {
+      alert(`Hospital DID is not available: ${didError || "Unknown error"}. Please check your connection and try again.`);
+      return;
+    }
+    
     setLoading(true);
+
     try {
       const timestamp = Math.floor(new Date(procedureTimestamp).getTime() / 1000);
 
-      if (!contract || !contract.methods) {
-        alert("Smart contract not loaded. Please make sure you're connected to MetaMask.");
-        setLoading(false);
-        return;
-      }      
-      await contract.methods
-        .recordProcedure(procedureName, timestamp)
-        .send({ from: accounts[0] });
-
-      alert("Procedure recorded successfully!");
+      // Skipping smart contract interaction
+      console.log("Skipping smart contract; issuing VC directly.");
 
       const vc = {
-        procedureName,
-        procedureTimestamp: timestamp,
-        hospitalDID,
-        policyholderDID: patientDID,
-        issuedTo: patientDID,
+        "@context": ["https://www.w3.org/2018/credentials/v1"],
+        type: ["VerifiableCredential", "MedicalProcedureCredential"],
+        issuer: hospitalDID,
         issuanceDate: new Date().toISOString(),
+        credentialSubject: {
+          id: patientDID,
+          procedure: {
+            name: procedureName,
+            timestamp: timestamp,
+          },
+        },
+        policyholderAddress: patientDID,
       };
 
       setVcData(vc);
@@ -57,7 +153,6 @@ const RecordProcedure = ({ contract, accounts, getDID }) => {
       await sendVCToPolicyholder(vc);
 
       alert("Verifiable Credential generated and sent to the policyholder!");
-
     } catch (error) {
       alert(`Failed to record procedure: ${error.message}`);
     } finally {
@@ -67,13 +162,27 @@ const RecordProcedure = ({ contract, accounts, getDID }) => {
 
   const sendVCToPolicyholder = async (vc) => {
     try {
-      const response = await axios.post("http://localhost:5000/api/send-vc", {
+      // Save the VC first
+      const saveResponse = await axios.post("http://localhost:5000/api/procedures/", { vc });
+      console.log("VC saved successfully on backend:", saveResponse.data);
+
+      // Then, potentially send a notification or the VC data to the policyholder
+      const sendResponse = await axios.post("http://localhost:5000/api/send-vc", {
         vc,
         policyholderAddress: patientDID,
       });
-      console.log("VC sent to policyholder:", response.data);
+      console.log("VC sent to policyholder:", sendResponse.data);
+
     } catch (error) {
       console.error("Error sending VC to policyholder:", error);
+      if (error.response) {
+        console.error("Backend error details:", error.response.data);
+      } else if (error.request) {
+        console.error("No response received from backend:", error.request);
+      } else {
+        console.error("Error setting up the request:", error.message);
+      }
+      throw new Error("Failed to send VC. Check console for details.");
     }
   };
 
@@ -82,6 +191,55 @@ const RecordProcedure = ({ contract, accounts, getDID }) => {
       <h2 className="text-3xl font-semibold text-gray-800 mb-6 text-center">
         Record Procedure
       </h2>
+      
+      {!currentAccount && !didError && (
+        <div className="mb-6 p-4 bg-yellow-100 border border-yellow-400 rounded-lg">
+          <p className="text-center text-yellow-700">
+            Please connect your wallet to continue.
+          </p>
+          <button 
+            onClick={async () => {
+              try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (accounts.length > 0) {
+                  setCurrentAccount(accounts[0]);
+                }
+              } catch (error) {
+                console.error("Failed to connect wallet:", error);
+                setDidError("Failed to connect wallet: " + (error.message || "Unknown error"));
+              }
+            }}
+            className="mt-2 w-full py-2 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition duration-300"
+          >
+            Connect Wallet
+          </button>
+        </div>
+      )}
+      
+      {currentAccount && (
+        <div className="mb-4 text-gray-600 text-center">
+          Connected Account: {currentAccount.substring(0, 6)}...{currentAccount.substring(currentAccount.length - 4)}
+        </div>
+      )}
+      
+      {fetchingDID && currentAccount && (
+        <div className="mb-4 text-blue-600 text-center">
+          Fetching hospital DID...
+        </div>
+      )}
+      
+      {didError && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 rounded-lg text-red-700 text-center">
+          Error loading hospital DID: {didError}
+        </div>
+      )}
+      
+      {hospitalDID && (
+        <div className="mb-4 text-green-600 text-center">
+          Hospital DID loaded successfully
+        </div>
+      )}
+      
       <form onSubmit={handleRecordProcedure} className="space-y-6">
         <div>
           <input
@@ -115,8 +273,9 @@ const RecordProcedure = ({ contract, accounts, getDID }) => {
         <button
           type="submit"
           className="w-full py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition duration-300"
+          disabled={fetchingDID || !hospitalDID || loading}
         >
-          {loading ? "Recording..." : "Record Procedure"}
+          {loading ? "Recording..." : fetchingDID ? "Waiting for DID..." : "Record Procedure"}
         </button>
       </form>
 

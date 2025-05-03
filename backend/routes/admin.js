@@ -255,4 +255,24 @@ router.get('/monthly/pdf', verifyAdmin, async (req, res) => {
   }
 });
 
+router.put("/:claimId/status", verifyAdmin, async (req, res) => {
+  const { status } = req.body;
+
+  try {
+    const claim = await Claim.findById(req.params.claimId);
+    if (!claim) {
+      return res.status(404).json({ message: "Claim not found" });
+    }
+
+    claim.status = status;
+    claim.updatedAt = Date.now();
+    await claim.save();
+
+    res.status(200).json({ message: "Claim status updated successfully", claim });
+  } catch (error) {
+    console.error("Error updating claim status:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

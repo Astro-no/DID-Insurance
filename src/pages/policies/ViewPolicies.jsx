@@ -82,7 +82,7 @@ const ViewPolicies = () => {
       if (response.data.success) {
         await updateUserRoleToPolicyholder(); // 👈 update role after registering
         alert("Policy registered successfully!");
-        navigate("/my-policies");
+        navigate("/policyholder-dashboard"); // Redirect to policyholder dashboard
       } else {
         alert(`Registration failed: ${response.data.message}`);
       }
