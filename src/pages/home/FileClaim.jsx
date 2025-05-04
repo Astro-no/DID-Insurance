@@ -139,7 +139,7 @@ const FileClaim = () => {
         },
       });
       alert("Claim filed successfully!");
-      navigate("/view-policies");
+      navigate("/myclaims");
     } catch (err) {
       console.error("Error filing claim:", err);
       if (err.response?.status === 401) {

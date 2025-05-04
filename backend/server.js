@@ -21,6 +21,7 @@ const vcRoutes = require("./routes/vcRoutes"); // Import the vcRoutes router
 const app = express();
 const claimRoutes = require("./routes/claimRoutes");
 const policyRegistrationRoutes = require("./routes/policyRegistrationsRoutes");
+//const claimRoutes = require("./routes/claims");
 app.use(express.json());
 
 const connectDB = async () => {
@@ -102,6 +103,7 @@ app.use('/api/procedures', procedureRoutes);
 app.use('/api/procedures', vcRoutes);
 // app.use("/api/vcs", vcRoutes); // Use the vcRoutes for the /api/vcs endpoint
 app.use("/api/policyregistrations", policyRegistrationRoutes);
+app.use("/api/claims", claimRoutes);
 app.get('/', (req, res) => {
   res.send('API is running...');
 });

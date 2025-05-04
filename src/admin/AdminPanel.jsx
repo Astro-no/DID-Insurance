@@ -729,47 +729,53 @@ const AdminPanel = ({ contract, accounts }) => {
             {loading ? (
               <p>Loading claims...</p>
             ) : (
-              <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <thead>
-                  <tr className="bg-gray-200 text-gray-700 uppercase text-sm">
-                    <th className="px-4 py-2 text-left">Policy Name</th>
-                    <th className="px-4 py-2 text-left">User</th>
-                    <th className="px-4 py-2 text-left">Claim Amount</th>
-                    <th className="px-4 py-2 text-left">Description</th>
-                    <th className="px-4 py-2 text-left">Status</th>
-                    <th className="px-4 py-2 text-left">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {claims.map((claim) => (
-                    <tr key={claim._id} className="border-b border-gray-200">
-                      <td className="px-4 py-2">{claim.policy.policyName}</td>
-                      <td className="px-4 py-2">{claim.user.name} ({claim.user.email})</td>
-                      <td className="px-4 py-2">{claim.claimAmount}</td>
-                      <td className="px-4 py-2">{claim.description}</td>
-                      <td className="px-4 py-2">{claim.status}</td>
-                      <td className="px-4 py-2">
-                        {claim.status === "pending" && (
-                          <>
-                            <button
-                              onClick={() => updateClaimStatus(claim._id, "approved")}
-                              className="bg-green-600 text-white px-4 py-2 rounded-lg mr-2"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => updateClaimStatus(claim._id, "rejected")}
-                              className="bg-red-600 text-white px-4 py-2 rounded-lg"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <>
+                {claims.length === 0 ? (
+                  <p className="text-gray-600 italic">No claims found</p>
+                ) : (
+                  <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <thead>
+                      <tr className="bg-gray-200 text-gray-700 uppercase text-sm">
+                        <th className="px-4 py-2 text-left">Policy Name</th>
+                        <th className="px-4 py-2 text-left">User</th>
+                        <th className="px-4 py-2 text-left">Claim Amount</th>
+                        <th className="px-4 py-2 text-left">Description</th>
+                        <th className="px-4 py-2 text-left">Status</th>
+                        <th className="px-4 py-2 text-left">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {claims.map((claim) => (
+                        <tr key={claim._id} className="border-b border-gray-200">
+                          <td className="px-4 py-2">{claim.policy?.policyName || "N/A"}</td>
+                          <td className="px-4 py-2">{claim.user?.name || "N/A"} ({claim.user?.email || "N/A"})</td>
+                          <td className="px-4 py-2">{claim.claimAmount}</td>
+                          <td className="px-4 py-2">{claim.description}</td>
+                          <td className="px-4 py-2">{claim.status}</td>
+                          <td className="px-4 py-2">
+                            {claim.status === "pending" && (
+                              <>
+                                <button
+                                  onClick={() => updateClaimStatus(claim._id, "approved")}
+                                  className="bg-green-600 text-white px-4 py-2 rounded-lg mr-2"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => updateClaimStatus(claim._id, "rejected")}
+                                  className="bg-red-600 text-white px-4 py-2 rounded-lg"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </>
             )}
           </div>
         )}

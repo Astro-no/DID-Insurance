@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import "./DIDregister.sol";
+import "./ClaimSettlement.sol";
 
 contract Insurance {
     struct Policy {
@@ -12,8 +13,8 @@ contract Insurance {
         uint256 endDate;
         PolicyStatus status;
         string holderDID;
-        string insuranceCompanyName; // Added field
-        string hospitalName; // Added field
+        string insuranceCompanyName;
+        string hospitalName;
     }
 
     struct Procedure {
@@ -34,6 +35,7 @@ contract Insurance {
     mapping(address => bool) public authorizedHospitals;
     
     DIDregister public immutable didRegistry;
+    ClaimSettlement public claimSettlement;
     
     mapping(uint256 => Policy) public policies;
     mapping(uint256 => Procedure[]) public policyProcedures;
@@ -49,6 +51,7 @@ contract Insurance {
     event ProcedureRecorded(uint256 indexed policyId, address indexed hospital, string procedureName);
     event HospitalAuthorized(address indexed hospital);
     event HospitalDeauthorized(address indexed hospital);
+    event ClaimSettlementContractSet(address indexed claimSettlementAddress);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Only admin can call");
@@ -76,6 +79,13 @@ contract Insurance {
         admin = msg.sender;
     }
 
+    // NEW FUNCTION: Set the ClaimSettlement contract address
+    function setClaimSettlementContract(address _claimSettlementAddress) external onlyAdmin {
+        require(_claimSettlementAddress != address(0), "Invalid address");
+        claimSettlement = ClaimSettlement(_claimSettlementAddress);
+        emit ClaimSettlementContractSet(_claimSettlementAddress);
+    }
+
     function setInsuranceCompany(address _insuranceCompany) external onlyAdmin {
         require(_insuranceCompany != address(0), "Invalid address");
         insuranceCompany = _insuranceCompany;
@@ -92,7 +102,6 @@ contract Insurance {
         emit HospitalDeauthorized(_hospital);
     }
 
-    // Original createPolicy function
     function createPolicy(
         string memory _did,
         uint256 _amount,
@@ -125,7 +134,6 @@ contract Insurance {
         return policyId;
     }
 
-    // New function to match frontend's createIns call
     function createIns(
         string memory _did,
         string memory _insuranceCompanyName,
@@ -195,29 +203,50 @@ contract Insurance {
             "Outside policy period"
         );
 
+        // Store the hospital address that recorded the procedure
+        // This is the address connected via MetaMask
         policyProcedures[_policyId].push(Procedure({
             name: _name,
             timestamp: block.timestamp,
             verified: true,
-            hospital: msg.sender
+            hospital: msg.sender // Using the connected MetaMask address
         }));
 
         emit ProcedureRecorded(_policyId, msg.sender, _name);
     }
 
+    // MODIFIED FUNCTION: Now uses ClaimSettlement contract
     function acceptClaim(uint256 _policyId) external onlyInsuranceCompany validPolicy(_policyId) {
         Policy storage policy = policies[_policyId];
         require(policy.status == PolicyStatus.Claimed, "No active claim");
-        require(address(this).balance >= policy.amount, "Insufficient balance");
+        require(address(claimSettlement) != address(0), "ClaimSettlement not set");
 
-        uint256 claimAmount = policy.amount;
-        policy.amount = 0;
+        // Get the procedures associated with this policy
+        Procedure[] memory procedures = policyProcedures[_policyId];
+        require(procedures.length > 0, "No procedures recorded for this claim");
+        
+        // Get the hospital address from the last recorded procedure
+        address hospitalAddress = procedures[procedures.length - 1].hospital;
+        require(hospitalAddress != address(0), "Invalid hospital address");
+        
+        // Update policy status
         policy.status = PolicyStatus.Inactive;
-
-        (bool sent, ) = policy.holder.call{value: claimAmount}("");
-        require(sent, "Transfer failed");
-
-        emit ClaimAccepted(_policyId, policy.holder, claimAmount);
+        
+        // Create a claim ID in ClaimSettlement using the patient's DID as reference
+        uint256 claimId = claimSettlement.submitClaim(
+            procedures[procedures.length - 1].name, // Use procedure name as procedureId
+            hospitalAddress, // Use the hospital address that recorded the procedure
+            policy.amount,
+            policy.holderDID // Use patient DID as VC reference
+        );
+        
+        // Approve the claim in ClaimSettlement
+        claimSettlement.approveClaim(claimId, policy.amount);
+        
+        // Send funds to ClaimSettlement and settle the claim, paying the hospital
+        claimSettlement.settleClaim{value: policy.amount}(claimId, true);
+        
+        emit ClaimAccepted(_policyId, policy.holder, policy.amount);
     }
 
     function rejectClaim(uint256 _policyId) external onlyInsuranceCompany validPolicy(_policyId) {
@@ -249,7 +278,6 @@ contract Insurance {
         return policyProcedures[_policyId];
     }
 
-    // New function to get full policy details
     function getPolicyDetails(uint256 _policyId) external view validPolicy(_policyId) returns (
         address holder,
         uint256 amount,
