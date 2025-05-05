@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import { Mail, Lock, Eye, EyeOff, User, IdCard } from "lucide-react";
@@ -21,23 +21,29 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+  const [walletConnecting, setWalletConnecting] = useState(true);
+  const [walletError, setWalletError] = useState(false);
 
-  // Check if context is ready
-  if (!contractContext || !contractContext.account || !contractContext.didRegisterContract) {
-    console.log("ContractContext:", contractContext); // Debugging log
-  console.log("Account:", contractContext?.account); // Debugging log
-  console.log("DID Register Contract:", contractContext?.didRegisterContract); // Debugging log
-  
-    return (
-      <div className="min-h-screen flex justify-center items-center bg-gray-100">
-        <div className="text-lg text-gray-700">Connecting to wallet...</div>
-        <ToastContainer />
-      </div>
-    );
-  }
+  // Add an effect to track wallet connection attempts
+  useEffect(() => {
+    // Set a timeout to consider wallet connection failed after 5 seconds
+    const timeout = setTimeout(() => {
+      if (!contractContext || !contractContext.account || !contractContext.didRegisterContract) {
+        console.log("Wallet connection timed out");
+        setWalletError(true);
+      }
+      setWalletConnecting(false);
+    }, 5000);
 
-  // Use context after check
-  const { account, didRegisterContract } = contractContext;
+    // If contract context is available, clear the timeout
+    if (contractContext && contractContext.account && contractContext.didRegisterContract) {
+      clearTimeout(timeout);
+      setWalletConnecting(false);
+      setWalletError(false);
+    }
+
+    return () => clearTimeout(timeout);
+  }, [contractContext]);
 
   const togglePasswordVisibility = () => setPasswordVisible((prev) => !prev);
   const toggleConfirmPasswordVisibility = () => setConfirmPasswordVisible((prev) => !prev);
@@ -56,6 +62,7 @@ const Signup = () => {
 
   const generateDID = () => {
     if (didGenerated) return;
+    // Generate a DID even if wallet is not connected
     const newDid = `did:ethr:${crypto.randomUUID()}`;
     setDid(newDid);
     setDidGenerated(true);
@@ -63,14 +70,22 @@ const Signup = () => {
   };
 
   const registerOnChainDID = async () => {
+    if (!contractContext || !contractContext.didRegisterContract || !contractContext.account) {
+      toast.error("Wallet not connected. DID will not be registered on-chain.");
+      return false;
+    }
+    
     try {
+      const { didRegisterContract, account } = contractContext;
       const tx = await didRegisterContract.registerDID("Policyholder", account);
       await tx.wait();
       console.log("DID registered on chain!");
       toast.success("DID successfully registered on blockchain.");
+      return true;
     } catch (err) {
       console.error("Failed to register DID on chain:", err);
       toast.error("Failed to register DID on the blockchain.");
+      return false;
     }
   };
 
@@ -106,6 +121,15 @@ const Signup = () => {
     setLoading(true);
 
     try {
+      // First try to register DID on-chain if wallet is connected
+      let didRegistered = false;
+      if (contractContext && contractContext.didRegisterContract && contractContext.account) {
+        didRegistered = await registerOnChainDID();
+      } else {
+        toast.warning("Proceeding without blockchain registration due to wallet connection issues.");
+      }
+
+      // Continue with backend registration regardless of blockchain status
       const response = await fetch("http://localhost:5000/api/users/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -118,6 +142,7 @@ const Signup = () => {
           did,
           role: "pending",
           status: "pending",
+          didOnChain: didRegistered
         }),
       });
 
@@ -125,7 +150,6 @@ const Signup = () => {
 
       if (response.ok) {
         toast.success("Signup successful! Awaiting admin approval.");
-        await registerOnChainDID(); // Register DID on blockchain
         setTimeout(() => navigate("/login"), 2000);
       } else {
         toast.error(data.message || data.error || "Signup failed.");
@@ -138,9 +162,28 @@ const Signup = () => {
     }
   };
 
+  // If wallet is still connecting and hasn't timed out yet
+  if (walletConnecting) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-gray-100">
+        <div className="text-lg text-gray-700">Connecting to wallet...</div>
+        <ToastContainer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex justify-center items-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-[800px]">
+        {walletError && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-yellow-700 font-medium">Wallet Connection Issue</p>
+            <p className="text-sm text-yellow-600">
+              Unable to connect to your wallet. You can still sign up, but DID will not be registered on the blockchain.
+            </p>
+          </div>
+        )}
+
         <h2 className="text-2xl font-semibold text-center text-orange-600 uppercase mb-6">
           Create an Account
         </h2>
