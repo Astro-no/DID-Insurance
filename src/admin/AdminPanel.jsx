@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import CreatePolicy from "../pages/home/CreatePolicy";
 import VerifyClaim from "../pages/home/VerifyClaim";
 import axios from "axios";
+import ReplyToMessage from "./ReplyToMessage";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
 
 const AdminPanel = ({ contract, accounts }) => {
   const [users, setUsers] = useState([]);
@@ -15,6 +17,11 @@ const AdminPanel = ({ contract, accounts }) => {
   const [reportGenerating, setReportGenerating] = useState(false);
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState(""); // Input field for searching policies/claims
+  const [filteredPolicies, setFilteredPolicies] = useState([]);
+  const [filteredClaims, setFilteredClaims] = useState([]);
+  const [messages, setMessages] = useState([]); // List of messages
+  const [error, setError] = useState(null); // Error state for messages
   
   // Policy form state
   const [policyForm, setPolicyForm] = useState({
@@ -26,6 +33,14 @@ const AdminPanel = ({ contract, accounts }) => {
     coveredHospital: "Agha Khan",
     coverageDetails: "" // Coverage details input field
   });
+
+  const navigate = useNavigate(); // Initialize useNavigate for navigation
+
+  // Logout function
+  const handleLogout = () => {
+    localStorage.removeItem("token"); // Clear the token from localStorage
+    navigate("/login"); // Redirect to the login page
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -210,6 +225,13 @@ const AdminPanel = ({ contract, accounts }) => {
   // Generate weekly report
   const generateReport = async () => {
     try {
+      // Validate that the selected date is not in the future
+      const today = new Date().toISOString().split('T')[0];
+      if (reportDate > today) {
+        alert("You cannot generate a report for a future date.");
+        return;
+      }
+
       setReportGenerating(true);
       const token = localStorage.getItem("token");
       
@@ -299,7 +321,7 @@ const AdminPanel = ({ contract, accounts }) => {
 
   // Format date for display
   const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    const options = { year: 'numeric', month: 'short', 'day': 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
@@ -351,11 +373,148 @@ const AdminPanel = ({ contract, accounts }) => {
     }
   };
 
+  // Search policies by name
+  const searchPolicies = () => {
+    if (!searchQuery) {
+      alert("Please enter a search query");
+      return;
+    }
+  
+    const results = policies.filter((policy) =>
+      policy.policyName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredPolicies(results);
+  };
+  
+  // Search claims by status
+  const searchClaims = () => {
+    if (!searchQuery) {
+      alert("Please enter a search query");
+      return;
+    }
+  
+    const results = claims.filter((claim) =>
+      claim.status.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredClaims(results);
+  };
+
+  // Fetch messages
+  const fetchMessages = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No authentication token found");
+        return;
+      }
+  
+      const response = await axios.get("http://localhost:5000/api/messages/admin", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      if (response.status === 200) {
+        console.log("Fetched messages:", response.data); // Debugging: Log the fetched messages
+        setMessages(response.data);
+      } else {
+        console.error("Failed to fetch messages:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    }
+  };
+  
+  useEffect(() => {
+    if (view === "messages") {
+      fetchMessages();
+    }
+  }, [view]);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        console.log("Admin token:", token); // Debugging: Log the token
+        if (!token) {
+          setError("You must be logged in as an admin to view messages.");
+          setLoading(false);
+          return;
+        }
+  
+        const response = await axios.get("http://localhost:5000/api/messages/admin", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+  
+        console.log("Fetched messages:", response.data); // Debugging: Log the fetched messages
+        setMessages(response.data);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+        setError("Failed to load messages. Please try again later.");
+        setLoading(false);
+      }
+    };
+  
+    fetchMessages();
+  }, []);
+
+  // Handle response change
+  const handleResponseChange = (messageId, responseText) => {
+    setMessages((prevMessages) =>
+      prevMessages.map((message) =>
+        message._id === messageId ? { ...message, response: responseText } : message
+      )
+    );
+  };
+
+  // Send response
+  const sendResponse = async (messageId) => {
+    const message = messages.find((msg) => msg._id === messageId);
+    if (!message || !message.response) {
+      alert("Please write a response before sending.");
+      return;
+    }
+  
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No authentication token found");
+        return;
+      }
+  
+      const response = await axios.post(
+        `http://localhost:5000/api/messages/${messageId}/respond`,
+        { response: message.response },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+  
+      if (response.status === 200) {
+        alert("Response sent successfully!");
+        fetchMessages(); // Refresh messages
+      } else {
+        console.error("Failed to send response:", response.statusText);
+        alert("Failed to send response. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error sending response:", error);
+      alert("An error occurred while sending the response.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6">
-        <h1 className="text-3xl font-semibold text-gray-800 mb-6 text-center">Admin Panel</h1>
-        
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-semibold text-gray-800">Admin Panel</h1>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition duration-300"
+          >
+            Logout
+          </button>
+        </div>
+
         <div className="flex flex-wrap justify-around mb-6 gap-2">
           <button 
             className={`px-4 py-2 rounded-lg transition-colors ${view === "users" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-blue-100"}`} 
@@ -386,6 +545,14 @@ const AdminPanel = ({ contract, accounts }) => {
             onClick={() => setView("reports")}
           >
             Reports
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              view === "messages" ? "bg-teal-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-teal-100"
+            }`}
+            onClick={() => setView("messages")}
+          >
+            Messages
           </button>
         </div>
 
@@ -539,6 +706,24 @@ const AdminPanel = ({ contract, accounts }) => {
         {view === "policiesList" && (
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">Policy List</h2>
+
+            {/* Search bar for policies */}
+            <div className="flex items-center mb-4">
+              <input
+                type="text"
+                placeholder="Search policies by name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="border p-2 w-full rounded-lg"
+              />
+              <button
+                onClick={searchPolicies}
+                className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-lg"
+              >
+                Search Policies
+              </button>
+            </div>
+
             <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
               <thead>
                 <tr className="bg-gray-200 text-gray-700 uppercase text-sm">
@@ -550,7 +735,7 @@ const AdminPanel = ({ contract, accounts }) => {
                 </tr>
               </thead>
               <tbody>
-                {policies.map((policy) => (
+                {(filteredPolicies.length > 0 ? filteredPolicies : policies).map((policy) => (
                   <tr key={policy._id} className="border-b border-gray-200">
                     <td className="px-4 py-2">{policy.policyName}</td>
                     <td className="px-4 py-2">{policy.policyDescription}</td>
@@ -598,6 +783,8 @@ const AdminPanel = ({ contract, accounts }) => {
                     type="date"
                     value={reportDate}
                     onChange={(e) => setReportDate(e.target.value)}
+                    min="2023-01-01" // Optional: Set a minimum date if needed
+                    max={new Date().toISOString().split('T')[0]} // Set the maximum date to today
                     className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -726,11 +913,29 @@ const AdminPanel = ({ contract, accounts }) => {
         {view === "claims" && (
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">Verify Claims</h2>
+
+            {/* Search bar for claims */}
+            <div className="flex items-center mb-4">
+              <input
+                type="text"
+                placeholder="Search claims by status (e.g., approved, rejected)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="border p-2 w-full rounded-lg"
+              />
+              <button
+                onClick={searchClaims}
+                className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-lg"
+              >
+                Search Claims
+              </button>
+            </div>
+
             {loading ? (
               <p>Loading claims...</p>
             ) : (
               <>
-                {claims.length === 0 ? (
+                {(filteredClaims.length > 0 ? filteredClaims : claims).length === 0 ? (
                   <p className="text-gray-600 italic">No claims found</p>
                 ) : (
                   <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -745,7 +950,7 @@ const AdminPanel = ({ contract, accounts }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {claims.map((claim) => (
+                      {(filteredClaims.length > 0 ? filteredClaims : claims).map((claim) => (
                         <tr key={claim._id} className="border-b border-gray-200">
                           <td className="px-4 py-2">{claim.policy?.policyName || "N/A"}</td>
                           <td className="px-4 py-2">{claim.user?.name || "N/A"} ({claim.user?.email || "N/A"})</td>
@@ -777,6 +982,32 @@ const AdminPanel = ({ contract, accounts }) => {
                 )}
               </>
             )}
+          </div>
+        )}
+
+        {view === "messages" && (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Messages</h2>
+
+            {/* List of Messages */}
+            <div className="mb-6">
+              {messages.length === 0 ? (
+                <p className="text-gray-600 italic">No messages found.</p>
+              ) : (
+                <ul className="space-y-4">
+                  {messages.map((message) => (
+                    <li key={message._id} className="border p-4 rounded-lg shadow-sm">
+                      <p><strong>From:</strong> {message.senderName} ({message.senderEmail})</p>
+                      <p><strong>Message:</strong> {message.content}</p>
+                      <p className="text-sm text-gray-500"><strong>Sent:</strong> {new Date(message.createdAt).toLocaleString()}</p>
+                      <div className="mt-4">
+                        <ReplyToMessage messageId={message._id} onReplySent={fetchMessages} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         )}
       </div>

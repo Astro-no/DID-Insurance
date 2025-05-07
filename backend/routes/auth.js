@@ -9,6 +9,18 @@ const verifyToken = require("../middleware/verifyToken");
 const authenticate = require("../middleware/verifyToken");
 const Hospital = require("../models/Hospital"); // Assuming your Hospital model is in "../models/Hospital.js"
 
+const generateToken = (user) => {
+  return jwt.sign(
+    {
+      id: user._id,
+      name: user.name, // Include the user's name
+      email: user.email, // Include the user's email
+      did: user.did, // Include the DID if needed
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "1h" }
+  );
+};
 
 dotenv.config();  
 
@@ -60,7 +72,7 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid password" });
 
-    const token = jwt.sign({ id: user._id, did: user.did }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const token = generateToken(user);
 
     res.json({
       message: "Login successful",
@@ -90,7 +102,7 @@ router.post("/login-did", async (req, res) => {
       return res.status(403).json({ message: "Account pending approval by admin" });
     }
 
-    const token = jwt.sign({ id: user._id, did: user.did }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const token = generateToken(user);
 
     res.json({
       message: "DID login successful",

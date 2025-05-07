@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
 
 const RecordProcedure = ({ accounts, getDID }) => {
   const [procedureName, setProcedureName] = useState("");
@@ -11,6 +12,14 @@ const RecordProcedure = ({ accounts, getDID }) => {
   const [fetchingDID, setFetchingDID] = useState(true);
   const [didError, setDidError] = useState(null);
   const [currentAccount, setCurrentAccount] = useState("");
+
+  const navigate = useNavigate(); // Initialize useNavigate for navigation
+
+  // Logout function
+  const handleLogout = () => {
+    localStorage.removeItem("token"); // Clear the token from localStorage
+    navigate("/login"); // Redirect to the login page
+  };
 
   // Function to generate a mock DID from an Ethereum address
   const generateMockDID = (address) => {
@@ -188,10 +197,16 @@ const RecordProcedure = ({ accounts, getDID }) => {
 
   return (
     <div className="max-w-xl mx-auto bg-white p-6 rounded-md shadow-lg mt-10">
-      <h2 className="text-3xl font-semibold text-gray-800 mb-6 text-center">
-        Record Procedure
-      </h2>
-      
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-3xl font-semibold text-gray-800">Record Procedure</h2>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition duration-300"
+        >
+          Logout
+        </button>
+      </div>
+
       {!currentAccount && !didError && (
         <div className="mb-6 p-4 bg-yellow-100 border border-yellow-400 rounded-lg">
           <p className="text-center text-yellow-700">

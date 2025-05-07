@@ -21,6 +21,7 @@ const vcRoutes = require("./routes/vcRoutes"); // Import the vcRoutes router
 const app = express();
 const claimRoutes = require("./routes/claimRoutes");
 const policyRegistrationRoutes = require("./routes/policyRegistrationsRoutes");
+const messagesRoutes = require("./routes/messages"); // Import messages routes
 //const claimRoutes = require("./routes/claims");
 app.use(express.json());
 
@@ -52,6 +53,7 @@ app.use('/api/verifyToken', verifyToken); // Protect routes with verifyToken mid
 app.use('/hospital', hospitalAuthRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use("/api/claims", claimRoutes);  // Only one import is needed for reportsRoutes
+app.use("/api/messages", messagesRoutes); // Register messages routes
 app.post("/api/send-vc", (req, res) => {
   const { vc, policyholderAddress } = req.body;
   console.log("Received VC:", vc);

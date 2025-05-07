@@ -7,9 +7,10 @@ const Hospital = require("../models/Hospital");
 const verifyAdmin = require("../middleware/verifyAdmin");
 const verifyToken = require("../middleware/verifyToken");
 const DIDRegisterABI = require("../abis/DIDregister.json");
-//console.log(DIDRegisterABI);
 const Claim = require('../models/Claim');
-const Policy = require('../models/Policy'); // Ensure this file exists
+const Policy = require('../models/Policy');
+const PDFDocument = require('pdfkit');
+
 dotenv.config({ path: './backend/.env' });
 
 const router = express.Router();
@@ -37,32 +38,10 @@ function generateDID(name) {
   return `did:hospital:${slug}-${Date.now()}`;
 }
 
-// 🔐 Authenticate admin from token
-const authenticateAdmin = async (req, res, next) => {
-  try {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
-    if (!token) {
-      return res.status(401).json({ message: "Unauthorized: No token provided" });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const admin = await User.findById(decoded.id);
-
-    if (!admin || admin.role !== "admin") {
-      return res.status(403).json({ message: "Access denied: Admins only" });
-    }
-
-    req.admin = admin;
-    next();
-  } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
-  }
-};
-
 // ✅ Admin info
-router.get("/me", authenticateAdmin, async (req, res) => {
+router.get("/me", verifyAdmin, async (req, res) => {
   try {
-    res.json({ id: req.admin._id, role: req.admin.role, email: req.admin.email });
+    res.json({ id: req.user._id, role: req.user.role, email: req.user.email });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
@@ -80,7 +59,7 @@ router.get("/users", verifyToken, verifyAdmin, async (req, res) => {
 });
 
 // ✅ Get user by DID
-router.get("/users/did/:did", authenticateAdmin, async (req, res) => {
+router.get("/users/did/:did", verifyAdmin, async (req, res) => {
   try {
     const user = await User.findOne({ did: req.params.did });
     if (!user) {
@@ -123,9 +102,6 @@ router.post("/register-hospitals", verifyToken, verifyAdmin, async (req, res) =>
 });
 
 // Generate weekly report
-const PDFDocument = require('pdfkit');
-
-
 router.get('/weekly/pdf', verifyAdmin, async (req, res) => {
   try {
     const oneWeekAgo = new Date();
@@ -190,7 +166,7 @@ router.get('/weekly/pdf', verifyAdmin, async (req, res) => {
   }
 });
 
-
+// Generate monthly report
 router.get('/monthly/pdf', verifyAdmin, async (req, res) => {
   try {
     const oneMonthAgo = new Date();
@@ -255,6 +231,7 @@ router.get('/monthly/pdf', verifyAdmin, async (req, res) => {
   }
 });
 
+// Update claim status
 router.put("/:claimId/status", verifyAdmin, async (req, res) => {
   const { status } = req.body;
 
@@ -275,4 +252,5 @@ router.put("/:claimId/status", verifyAdmin, async (req, res) => {
   }
 });
 
+// Export the router
 module.exports = router;

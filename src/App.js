@@ -12,7 +12,8 @@ import { ContractProvider } from "./context/ContractContext";
 import FileClaim from "./pages/home/FileClaim";
 import RecordProcedure from "./pages/home/RecordProcedure";
 import ViewVCs from './pages/home/ViewVCs';
-import MyClaims from "./pages/home/MyClaims"; // ✅ Import added
+import MyClaims from "./pages/home/MyClaims"; //  Import added
+import MyMessages from "./pages/home/messages/MyMessages";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         <Route path="/record-procedure" element={<RecordProcedure />} />
         <Route path="/view-vcs/:policyholderDID" element={<ViewVCs />} />
         <Route path="/myclaims" element={<MyClaims />} /> {/* ✅ Route added */}
+        <Route path="/my-messages" element={<MyMessages />} />
 
         <Route path="/admin" element={
           <ProtectedAdminRoute>
