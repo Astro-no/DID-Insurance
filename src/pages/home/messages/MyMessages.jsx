@@ -1,10 +1,19 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
 
 const MyMessages = () => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const navigate = useNavigate(); // Initialize useNavigate for navigation
+
+  // Logout function
+  const handleLogout = () => {
+    localStorage.removeItem("token"); // Clear the token from localStorage
+    navigate("/login"); // Redirect to the login page
+  };
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -40,7 +49,15 @@ const MyMessages = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold mb-4">My Messages</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">My Messages</h2>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition duration-300"
+        >
+          Logout
+        </button>
+      </div>
       {messages.length === 0 ? (
         <p>No messages found.</p>
       ) : (
