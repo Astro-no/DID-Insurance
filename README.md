@@ -1,40 +1,67 @@
-# Blockchain-Insurance-Fraud-Detection
+# DID-based Insurance Verification System
 
 ## Introduction
 
-Insurance can be exposed to numerous fraud schemes. For example, a new applicant can commit fraud by withholding critical information or filing a claim on behalf of ineligible dependents. This project aims to reduce insurance fraud by leveraging blockchain technology. Blockchain offers opportunities for innovation in data exchange, claims processing, and fraud prevention within the insurance industry. By recording medical procedures and timestamps on a blockchain platform, compliance and verification of medical services rendered can be improved.
+The insurance industry is vulnerable to various forms of fraud, such as applicants submitting false identities, double-claiming benefits, or filing fraudulent claims on behalf of ineligible parties. This project introduces a Decentralized Identifier (DID) and Verifiable Credentials (VCs)-based system combined with blockchain technology to reduce insurance fraud. By issuing, verifying, and recording claims and identity credentials on the blockchain, this system strengthens trust, transparency, and interoperability across stakeholders—policyholders, hospitals, and insurers.
 
 ## Objective
 
-The objective of this project is to utilize blockchain technology to reduce insurance fraud. It aims to automate manual processes, reduce errors, and expedite processing times in the insurance industry. By storing information on plan participants, entitlements, and claim data, blockchain can streamline operations, improve data quality, and increase trust between parties.
+The objective of this project is to reduce insurance fraud by integrating DIDs and Verifiable Credentials with blockchain. It focuses on enhancing the integrity and automation of identity verification, claim submission, and medical procedure validation. The system ensures secure data exchange, prevents multiple claims on the same procedure, and verifies the authenticity of all parties involved—streamlining claims processing while improving trust and efficiency.
 
-## Scope
+## Users in the system
+The project focuses on:
+
+Policyholders: Individuals who register with a DID and receive digital credentials linked to their identity and insurance entitlements.
+
+Hospitals: Authorized to record treatment details and issue Verifiable Credentials for medical procedures.
+
+Administrator/ Insurance Companies: Use the system to verify identities, validate claims against credentials, and detect fraudulent behavior across claim histories.
 
 The scope of this project includes people applying for medical insurance, insurance companies, and hospitals involved in the medical history of the patient.
 
 ## Smart Contracts
 
-Smart contracts enable transparent and trustless transactions on the blockchain. In the context of insurance, smart contracts can be used to track insurance claims, enforce policy rules, and hold both parties accountable. Insurance policies can be written as decentralized smart contracts, where individuals agree to pay premiums in return for the insurance company's promise to cover their future medical costs. If false or fraudulent claims are made, smart contracts can dissolve automatically, ensuring fair outcomes and mutual trust.
+Smart contracts facilitate trusted automation and accountability. In this system, smart contracts:
+
+1. Record and validate insurance policies.
+
+2. Link policyholders' DIDs with insurance entitlements.
+
+3. Manage medical claims submitted through Verifiable Credentials.
+
+4. Automatically enforce rules (e.g., reject duplicate claims).
+
+5. Enable permissionless yet secure access to validated data for insurers and hospitals.
+
+This decentralized structure ensures fraud detection.
 
 ## Code
 
-The smart contract code is written in Solidity and can be found in the `Insurance.sol` file in this repository. The contract includes functionalities such as defining entities, policy details, policy status, claim amounts, and recording medical procedures. It also provides functions for users to make claims and for hospitals to record procedures.
+The smart contracts code is written in Solidity and can be found in the 'contracts' directory in this repository. They includes modules for:
+
+1. DID registration and verification.
+
+2. Policy issuance and linkage to DIDs.
+
+3. Hospital credential issuance for medical procedures.
+
+4. Claim submission using Verifiable Credentials.
+
+5. Automated claim status updates and auditing.
 
 ## Installation
 
-To run the code locally, follow these steps:
+Start off with cloning this repository. Initialize npm and start local development server.
 
-1. Install [Ganache](https://www.trufflesuite.com/ganache).
-2. Install [Truffle](https://www.trufflesuite.com/truffle).
-3. Clone this repository.
-4. Open Ganache and start a new workspace.
-5. In the project directory, run `truffle migrate` to deploy the smart contract.
-6. In the project directory, run `npm start` to start the local server.
+Also run node backend/server.js to start the backend. 
+
+You can compile and deploy the contracts locally or on remix and copy the ABI's.
+
 
 ## Conclusion
 
-This project demonstrates how blockchain technology can be leveraged to reduce insurance fraud. By utilizing smart contracts, manual processes can be automated, leading to improved efficiency, cost reduction, enhanced customer experience, improved data quality, and increased trust between parties. The potential impact on the insurance industry is significant, as blockchain provides opportunities for innovation and disruption in traditional processes.
+This project highlights how DIDs, Verifiable Credentials, and blockchain can be integrated to build a secure and fraud-resistant insurance ecosystem. By removing reliance on paper-based and siloed systems, it offers a modern approach to identity management, claims verification, and interoperability across stakeholders. The result is a transparent, efficient, and trustworthy infrastructure for managing insurance claims and combating fraud.
 
-Feel free to contribute to this project by providing feedback, suggestions, or enhancements. Together, we can drive the adoption of blockchain technology in the insurance sector and mitigate fraud risks.
+Feel free to contribute :)
 
-The oresentation assiciated to the project is linked [here](https://docs.google.com/presentation/d/123DaoQZap4gL_wcY9WWPKdojzZtFmT5ohcCptiuvhfg/edit?usp=sharing).
+
